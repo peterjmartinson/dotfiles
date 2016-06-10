@@ -1,0 +1,9 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhist_cnt =7
+let g:netrw_dirhist_1='/i/Athena/Report Requests/martinson/SR1898036 - Arwin Thomasson - Post-transplant lab data'
+let g:netrw_dirhist_2='/i/Athena/Report Requests/martinson/SR1877121 - Sagori Mukhopadhyay - Clinical use of C-reactive protein (CRP)'
+let g:netrw_dirhist_3='/i/Athena/Report Requests/martinson/SR1934519 - Annemarie Schorpion - Clinical and Radiographic characteristics of Proteins'
+let g:netrw_dirhist_4='/i/Athena/Report Requests/martinson'
+let g:netrw_dirhist_5='/i/Athena/Report Requests/martinson/~ COMPLETED'
+let g:netrw_dirhist_6='/i/Athena/Report Requests/martinson/~ COMPLETED/SR1802042 - Leonard Anderson - Patients who had services billed with specific ICD codes'
+let g:netrw_dirhist_7='/i/Athena/Report Requests/martinson/SR1877121 - Sagori Mukhopadhyay - Clinical use of C-reactive protein (CRP)'
