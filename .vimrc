@@ -22,16 +22,16 @@ set t_Co=256                        " Use 256 colors
 set hlsearch                        " Highlight all occurrences of a search
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
-set background=dark                 " Dark Solarize colorscheme
+set background=light                 " Dark Solarize colorscheme
 let g:solarized_termcolors=256      " Make Solarize use built in color palatte
 colorscheme solarized               " Colorscheme = solarized
 set laststatus=2                    " Show statusline always
 set statusline=\<%n\>\ %t\ \%m\%=\%c\ \|\ %l\ of\ %L
-
+set statusline+=\ \ \[%{strftime('%I:%M\ %p')}\]
 "  Highlight current line when in Insert mode
-hi CursorLine ctermbg=232 cterm=none
-au InsertEnter * set cursorline     " Insert mode line highlighting
-au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
+"hi CursorLine ctermbg=232 cterm=none
+"au InsertEnter * set cursorline     " Insert mode line highlighting
+"au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 
 " Keybindings
 let mapleader=","                   " Remap the leader key to ,
