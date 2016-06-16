@@ -36,14 +36,14 @@ au InsertEnter * set cursorline     " Insert mode line highlighting
 au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 
 " Keybindings
-let mapleader=","                   " Remap the leader key to ,
-nmap <Leader>j :w<CR>:make<CR><CR>:copen<CR>  " ,j runs the linter
-nmap <Leader>n :nohl<CR>            " ,h removes search result highlights
-nmap <Leader>w <C-w><C-w>           " Switch windows in split-window mode
-nnoremap <C-n> :bnext<CR>           " Ctrl-n = next buffer
-nnoremap <C-p> :bprevious<CR>       " Ctrl-p = previous buffer
-nnoremap <C-c> :bp\|bd #<CR>        " Ctrl-c = close current buffer
-inoremap kj <esc>                    " 'kj' returns to normal from insert
-"inoremap <esc> <nop>                      and <esc> doesn't.  Ha ha ha!!!
-nnoremap <leader>ev :split $MYVIMRC<cr>  " open .vimrc to edit
-nnoremap <leader>sv :source $MYVIMRC<cr> " reload .vimrc
+let mapleader=','
+nmap <Leader>j :w<CR>:make<CR><CR>:copen<CR>
+nmap <Leader>n :nohl<CR>
+nmap <Leader>w <C-w><C-w>
+nnoremap <C-n> :bnext<CR>
+nnoremap <C-p> :bprevious<CR>
+nnoremap <C-c> :bp\|bd #<CR>
+inoremap kj <esc>
+"inoremap <esc> <nop>
+nnoremap <leader>ev :split $MYVIMRC<cr>
+nnoremap <leader>sv :source $MYVIMRC<cr>
