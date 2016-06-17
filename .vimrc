@@ -47,3 +47,21 @@ inoremap kj <esc>
 "inoremap <esc> <nop>
 nnoremap <leader>ev :split $MYVIMRC<cr>
 nnoremap <leader>sv :source $MYVIMRC<cr>
+nnoremap <leader>' viw<esc>a'<esc>hbi'<esc>lel
+
+" SQL specific bindings
+
+"  E.ENC_DATE -> trunc(E.ENC_DATE,'DDD')
+nnoremap <leader>strunc viW<esc>a,'DDD')<esc>Bitrunc(<esc>%%
+
+"  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
+nnoremap <leader>sdate viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
+
+"  TABLE_NAME -> drop table TABLE_NAME;
+nnoremap <leader>sdrop viw<esc>a;<esc>hbidrop table <esc>lel
+
+"  TABLE_NAME -> create table TABLE_NAME nologging as
+nnoremap <leader>screate viw<esc>a nologging as<esc>bbbicreate table <esc>o<esc>
+
+"  Centers text into a comment line
+nnoremap <leader>sline :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
