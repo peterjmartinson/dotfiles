@@ -35,7 +35,15 @@ hi CursorLine ctermbg=232 cterm=none
 au InsertEnter * set cursorline     " Insert mode line highlighting
 au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 
-" Keybindings
+"""""""""""""""
+" Keybindings "
+"""""""""""""""
+
+" ,j->jslint | ,n->nohl | ,w->switch window
+" ctrl-n->next buffer   | ctrl-p->previous buffer | ctrl-c->close buffer
+" ,ev->edit .vimrc      | ,sv->reload .vimrc      | ,'->quote 'word'
+" > -> indent, stay in visual | < -> deindent, stay in visual
+" ,c->"clip" delete last character in line | ;=:
 let mapleader=','
 nmap <Leader>j :w<CR>:make<CR><CR>:copen<CR>
 nmap <Leader>n :nohl<CR>
@@ -43,25 +51,34 @@ nmap <Leader>w <C-w><C-w>
 nnoremap <C-n> :bnext<CR>
 nnoremap <C-p> :bprevious<CR>
 nnoremap <C-c> :bp\|bd #<CR>
-inoremap kj <esc>
-"inoremap <esc> <nop>
 nnoremap <leader>ev :split $MYVIMRC<cr>
 nnoremap <leader>sv :source $MYVIMRC<cr>
 nnoremap <leader>' viw<esc>a'<esc>hbi'<esc>lel
+vmap > >gv
+vmap < <gv
+nnoremap <leader>c $x0
+nnoremap ; :
 
-" SQL specific bindings
+"  move screen lines with arrow keys
+imap <up> <C-O>gk
+imap <down> <C-O>gj
+nmap <up> gk
+nmap <down> gj
+vmap <up> gk
+vmap <down> gj
+
+"""""""""""""""""""""""""
+" SQL specific bindings "
+"""""""""""""""""""""""""
 
 "  E.ENC_DATE -> trunc(E.ENC_DATE,'DDD')
-nnoremap <leader>strunc viW<esc>a,'DDD')<esc>Bitrunc(<esc>%%
-
+nnoremap <leader>str viW<esc>a,'DDD')<esc>Bitrunc(<esc>%%
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
-nnoremap <leader>sdate viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
-
+nnoremap <leader>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table TABLE_NAME;
-nnoremap <leader>sdrop viw<esc>a;<esc>hbidrop table <esc>lel
-
+nnoremap <leader>sdt viw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
-nnoremap <leader>screate viw<esc>a nologging as<esc>bbbicreate table <esc>o<esc>
-
+nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>o<esc>
 "  Centers text into a comment line
-nnoremap <leader>sline :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+nnoremap <leader>sl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+
