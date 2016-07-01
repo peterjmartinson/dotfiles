@@ -78,7 +78,7 @@ nnoremap <leader>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table TABLE_NAME;
 nnoremap <leader>sdt viw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
-nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>o<esc>
+nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
 "  Centers text into a comment line
 nnoremap <leader>sl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
 
