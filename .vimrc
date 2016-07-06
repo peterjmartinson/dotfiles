@@ -4,6 +4,8 @@
 "  
 "  type 'vim --version' to see where to save this file
 
+set nocompatible
+
 "  Plugin manager
 execute pathogen#infect()
 filetype plugin on
@@ -29,6 +31,7 @@ colorscheme solarized               " Colorscheme = solarized
 set laststatus=2                    " Show statusline always
 set statusline=\<%n\>\ %t\ \%m\%=\%c\ \|\ %l\ of\ %L
 set statusline+=\ \ \[%{strftime('%I:%M\ %p')}\]
+let g:netrw_liststyle=3
 
 "  Highlight current line when in Insert mode
 hi CursorLine ctermbg=232 cterm=none
@@ -45,18 +48,22 @@ au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 " > -> indent, stay in visual | < -> deindent, stay in visual
 " ,c->"clip" delete last character in line | ;=:
 let mapleader=','
-nmap <Leader>j :w<CR>:make<CR><CR>:copen<CR>
-nmap <Leader>n :nohl<CR>
-nmap <Leader>w <C-w><C-w>
-nnoremap <C-n> :bnext<CR>
-nnoremap <C-p> :bprevious<CR>
-nnoremap <C-c> :bp\|bd #<CR>
+nmap <leader>j :w<cr>:make<cr><cr>:copen<cr>
+nmap <leader>n :nohl<cr>
+nmap <leader>w <C-w><C-w>
+nmap <leader>v :90vsplit<cr>
+nmap <leader>d :20Lexplore<cr>
+nnoremap <C-n> :bnext<cr>
+nnoremap <C-p> :bprevious<cr>
+" close the buffer, but not the split
+nnoremap <C-c> :bp\|bd #<cr>
 nnoremap <leader>ev :split $MYVIMRC<cr>
 nnoremap <leader>sv :source $MYVIMRC<cr>
 nnoremap <leader>' viw<esc>a'<esc>hbi'<esc>lel
 vmap > >gv
 vmap < <gv
 nnoremap <leader>c $x0
+nnoremap <leader><space> 0d$
 nnoremap ; :
 
 "  move screen lines with arrow keys
