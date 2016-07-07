@@ -53,7 +53,7 @@ nmap <leader>j :w<cr>:make<cr><cr>:copen<cr>
 nmap <leader>n :nohl<cr>
 nmap <leader>w <C-w><C-w>
 nmap <leader>v :90vsplit<cr>
-nmap <leader>d :20Lexplore<cr>
+nmap <leader>d :20Vexplore<cr>
 nnoremap <C-n> :bnext<cr>
 nnoremap <C-p> :bprevious<cr>
 " close the buffer, but not the split
