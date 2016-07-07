@@ -30,7 +30,8 @@ let g:solarized_termcolors=256      " Make Solarize use built in color palatte
 colorscheme solarized               " Colorscheme = solarized
 set laststatus=2                    " Show statusline always
 set statusline=\<%n\>\ %t\ \%m\%=\%c\ \|\ %l\ of\ %L
-set statusline+=\ \ \[%{strftime('%I:%M\ %p')}\]
+set statusline+=\ \ \[\ %{strftime('%m\/%d\/%Y')}
+set statusline+=\ %{strftime('%I:%M\ %p')}\]
 let g:netrw_liststyle=3
 
 "  Highlight current line when in Insert mode
