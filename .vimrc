@@ -50,17 +50,22 @@ au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 " ,c->"clip" delete last character in line | ;=:
 let mapleader=','
 nmap <leader>j :w<cr>:make<cr><cr>:copen<cr>
-nmap <leader>n :nohl<cr>
+nmap <leader>; :nohl<cr>
 nmap <leader>w <C-w><C-w>
 nmap <leader>v :90vsplit<cr>
+nmap <leader>t :NERDTree<cr>
 nmap <leader>d :20Vexplore<cr>
+nmap <leader>- O<esc>80i-<esc>j0
 nnoremap <C-n> :bnext<cr>
 nnoremap <C-p> :bprevious<cr>
 " close the buffer, but not the split
-nnoremap <C-c> :bp\|bd #<cr>
+nnoremap <C-c> :bprevious\|bwipeout #<cr>
 nnoremap <leader>ev :split $MYVIMRC<cr>
 nnoremap <leader>sv :source $MYVIMRC<cr>
-nnoremap <leader>' viw<esc>a'<esc>hbi'<esc>lel
+nnoremap <leader>' viw<esc>a'<esc>hBi'<esc>lE
+nnoremap <leader>( viW<esc>a)<esc>hBi(<esc>lE
+"  Centers text into a comment line
+nnoremap <leader>cl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
 vmap > >gv
 vmap < <gv
 nnoremap <leader>c $x0
@@ -79,14 +84,24 @@ vmap <down> gj
 " SQL specific bindings "
 """""""""""""""""""""""""
 
-"  E.ENC_DATE -> trunc(E.ENC_DATE,'DDD')
-nnoremap <leader>str viW<esc>a,'DDD')<esc>Bitrunc(<esc>%%
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
 nnoremap <leader>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table TABLE_NAME;
 nnoremap <leader>sdt viw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
 nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
-"  Centers text into a comment line
-nnoremap <leader>sl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+"  puts a column into a comma-separated pair of parentheses
+"    make sure there's a blank line underneath the list!!
+nnoremap <leader>s( mm}kk:'m,.s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
 
+""""""""""""""""""""""""""
+" Simplenote Integration "
+""""""""""""""""""""""""""
+" let g:SimplenoteUsername = "username"
+" let g:SimplenotePassword = "password"
+
+source ~/.simplenoterc
+
+nnoremap <leader>nl :Simplenote -l<cr>
+nnoremap <leader>nn :Simplenote -n<cr>
+nnoremap <leader>nt :Simplenote -t<cr>
