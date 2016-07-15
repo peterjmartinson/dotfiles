@@ -68,7 +68,7 @@ nnoremap <leader>( viW<esc>a)<esc>hBi(<esc>lE
 nnoremap <leader>cl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
 vmap > >gv
 vmap < <gv
-nnoremap <leader>c $x0
+nnoremap <leader>, $x0
 nnoremap <leader><space> 0d$
 nnoremap ; :
 
@@ -79,6 +79,12 @@ nmap <up> gk
 nmap <down> gj
 vmap <up> gk
 vmap <down> gj
+
+"  Switch windows using CTRL-<motion key>
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
 
 """""""""""""""""""""""""
 " SQL specific bindings "
