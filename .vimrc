@@ -3,6 +3,9 @@
 "  Create Date: September 1, 2015
 "  
 "  type 'vim --version' to see where to save this file
+"
+"  desired functionality:
+"    simplify statusbar when window is small
 
 set nocompatible
 
@@ -48,10 +51,9 @@ au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 " ,ev->edit .vimrc      | ,sv->reload .vimrc      | ,'->quote 'word'
 " > -> indent, stay in visual | < -> deindent, stay in visual
 " ,c->"clip" delete last character in line | ;=:
-let mapleader=','
+let mapleader="\<tab>"
 nmap <leader>j :w<cr>:make<cr><cr>:copen<cr>
 nmap <leader>; :nohl<cr>
-nmap <leader>w <C-w><C-w>
 nmap <leader>v :90vsplit<cr>
 nmap <leader>t :NERDTree<cr>
 nmap <leader>d :20Vexplore<cr>
@@ -70,6 +72,7 @@ vmap > >gv
 vmap < <gv
 nnoremap <leader>, $x0
 nnoremap <leader><space> 0d$
+nnoremap <leader>o O<esc>j
 nnoremap ; :
 
 "  move screen lines with arrow keys
@@ -85,6 +88,8 @@ nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
+
+nmap <leader>1 :NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>h
 
 """""""""""""""""""""""""
 " SQL specific bindings "
