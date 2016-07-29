@@ -58,13 +58,14 @@ nmap <leader>v :90vsplit<cr>
 nmap <leader>t :NERDTree<cr>
 nmap <leader>d :20Vexplore<cr>
 nmap <leader>- O<esc>80i-<esc>j0
+nmap <leader>u viwu
 nnoremap <C-n> :bnext<cr>
 nnoremap <C-p> :bprevious<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
 nnoremap <leader>ev :split $MYVIMRC<cr>
 nnoremap <leader>sv :source $MYVIMRC<cr>
-nnoremap <leader>' viw<esc>a'<esc>hBi'<esc>lE
+nnoremap <leader>' viW<esc>a'<esc>hBi'<esc>lE
 nnoremap <leader>( viW<esc>a)<esc>hBi(<esc>lE
 "  Centers text into a comment line
 nnoremap <leader>cl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
@@ -89,7 +90,9 @@ nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
-nmap <leader>1 :NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>h
+"  Special window layouts
+nmap <leader>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t
+nmap <leader>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t
 
 """""""""""""""""""""""""
 " SQL specific bindings "
@@ -104,6 +107,8 @@ nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
 "  puts a column into a comma-separated pair of parentheses
 "    make sure there's a blank line underneath the list!!
 nnoremap <leader>s( mm}kk:'m,.s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
+"  comment out lines from VISUAL mode
+vnoremap <leader>- :s/^/-- /<cr>
 
 """"""""""""""""""""""""""
 " Simplenote Integration "
