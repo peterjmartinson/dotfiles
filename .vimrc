@@ -73,7 +73,7 @@ vmap > >gv
 vmap < <gv
 nnoremap <leader>, $x0
 nnoremap <leader><space> 0d$
-nnoremap <leader>o O<esc>j
+nnoremap <leader>o O<esc>
 nnoremap ; :
 
 "  move screen lines with arrow keys
@@ -93,6 +93,13 @@ nnoremap <C-l> <C-w>l
 "  Special window layouts
 nmap <leader>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t
 nmap <leader>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t
+nmap <leader>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
+nmap <leader>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
+
+"  Folding keybindings
+"  note, requires :set foldmethod=marker
+" nnoremap <leader>f yiw{o/* <esc>pA {{{ */<esc>:center 80<cr>}O/* }}} */<esc>:center 80<cr>{j
+" set foldmethod=marker
 
 """""""""""""""""""""""""
 " SQL specific bindings "
@@ -101,7 +108,7 @@ nmap <leader>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
 nnoremap <leader>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table TABLE_NAME;
-nnoremap <leader>sdt viw<esc>a;<esc>hbidrop table <esc>lel
+nnoremap <leader>sdt yiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
 nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
 "  puts a column into a comma-separated pair of parentheses

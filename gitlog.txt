@@ -1,0 +1,89 @@
+commit f81f6ac9b16cbf37e9afd333f2ad44c44b52356d
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jul 29 10:30:47 2016 -0400
+
+    fresh vimrc
+
+commit c9dc3ad5bc469b8747fb42e9958bea62445455da
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Wed Jul 20 09:15:31 2016 -0400
+
+    minor improvements to .vimrc
+
+commit 1d4cd8eb3523712ea5d26dd79fb750bd683be614
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jul 15 16:24:03 2016 -0400
+
+    more vimrc bindings - better window switching
+
+commit b409ca08c5f52eaa0bcdf6f33d0b9b8cf11e1fa7
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Thu Jul 14 16:28:56 2016 -0400
+
+    added Simplenote to .vimrc
+
+commit 4dc924730bde874e1ca0d4382435fbec55e35100
+Author: Peter Martinson <peter.j.martinson@gmail.com>
+Date:   Wed Jul 6 22:03:45 2016 -0400
+
+    Vexplore
+
+commit 187e7255fba31d087d8a5517d114057fb4593cc2
+Author: Peter Martinson <peter.j.martinson@gmail.com>
+Date:   Wed Jul 6 20:46:01 2016 -0400
+
+    date to Vim statusline
+
+commit 56adbbbeb5599dd6c0da5c591daaaa41be98c610
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Wed Jul 6 16:33:51 2016 -0400
+
+    vimrc work
+
+commit 8867922dee731bb7a196fdc79b5f6272e534091f
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jul 1 16:31:13 2016 -0400
+
+    more vim tweaks
+
+commit 3300c1a5e3388f21e0b5276d9d1489ce838cc712
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jun 24 09:38:20 2016 -0400
+
+    .vimrc tinkering
+
+commit 4255b10e28771dcafb30ef8466e2b050eae1b2ca
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jun 17 16:39:06 2016 -0400
+
+    awesome hotkeys in .vimrc
+
+commit 6a9e0b976c780a79421ec99c2eb9cca9b3886c37
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Thu Jun 16 16:14:01 2016 -0400
+
+    fixed vimrc's comments
+
+commit 12bab653570a98e783c2a63c58bd7c0624b9be0b
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Tue Jun 14 16:24:44 2016 -0400
+
+    more .vimrc, better sql colors
+
+commit e9e2b068d8fb91f4f9ff542012632cadf86f8a9a
+Author: Peter Martinson <peter.j.martinson@gmail.com>
+Date:   Sun Jun 12 14:21:11 2016 -0400
+
+    time on Vim statusline
+
+commit 687daed013d9d6fa2fc44059949092a436e46934
+Author: peter.j.martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jun 10 16:18:54 2016 -0400
+
+    first commit
+
+commit 12ed4e2eda03e8aef3a6da5cfce45a29d1e9ae65
+Author: Peter Martinson <peter.j.martinson@gmail.com>
+Date:   Fri Jun 10 16:16:59 2016 -0400
+
+    Initial commit
