@@ -12,6 +12,7 @@ set nocompatible
 "  Plugin manager
 execute pathogen#infect()
 filetype plugin on
+autocmd FileType sql setlocal commentstring=--\ %s
 
 set tabstop=2                       " Tabs are 2 columns long
 set expandtab                       " Typing Tab produces spaces, not tabs
@@ -22,6 +23,7 @@ set number                          " Turn on line numbers
 set wrap                            " Wrap text
 set linebreak                       " Don't break words at the wrap
 set nolist                          " Don't show eol and other chars
+set ignorecase                      " Ignore case while searching
 set scrolloff=5                     " Scroll when 5 lines from top or bottom
 set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
@@ -59,16 +61,16 @@ nmap <leader>t :NERDTree<cr>
 nmap <leader>d :20Vexplore<cr>
 nmap <leader>- O<esc>80i-<esc>j0
 nmap <leader>u viwu
-nnoremap <C-n> :bnext<cr>
-nnoremap <C-p> :bprevious<cr>
-" close the buffer, but not the split
-nnoremap <C-c> :bprevious\|bwipeout #<cr>
 nnoremap <leader>ev :split $MYVIMRC<cr>
 nnoremap <leader>sv :source $MYVIMRC<cr>
 nnoremap <leader>' viW<esc>a'<esc>hBi'<esc>lE
 nnoremap <leader>( viW<esc>a)<esc>hBi(<esc>lE
 "  Centers text into a comment line
-nnoremap <leader>cl :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+nnoremap <leader>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+nnoremap <C-n> :bnext<cr>
+" nnoremap <C-p> :bprevious<cr>
+" close the buffer, but not the split
+nnoremap <C-c> :bprevious\|bwipeout #<cr>
 vmap > >gv
 vmap < <gv
 nnoremap <leader>, $x0
@@ -111,11 +113,15 @@ nnoremap <leader>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 nnoremap <leader>sdt yiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
 nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
+"  TABLE_NAME -> drop table/create table TABLE_NAME
+nnoremap <leader>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
 "  puts a column into a comma-separated pair of parentheses
 "    make sure there's a blank line underneath the list!!
-nnoremap <leader>s( mm}kk:'m,.s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
-"  comment out lines from VISUAL mode
-vnoremap <leader>- :s/^/-- /<cr>
+nnoremap <leader>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
+"  format list of values to -> ('a', 'b', 'c', etc.)
+nnoremap <leader>s' {j<c-v>}kI'<esc>V}kk:s/\n/', /<cr>I(<esc>A')<esc>0:nohl<cr>
+
+
 
 """"""""""""""""""""""""""
 " Simplenote Integration "
@@ -128,3 +134,41 @@ source ~/.simplenoterc
 nnoremap <leader>nl :Simplenote -l<cr>
 nnoremap <leader>nn :Simplenote -n<cr>
 nnoremap <leader>nt :Simplenote -t<cr>
+
+"""""""""""""""""""""""""""""""""""
+" Abbreviations / Typo correction "
+"""""""""""""""""""""""""""""""""""
+
+iabbrev   pateint   patient
+iabbrev   PATEINT   PATIENT
+iabbrev   adn       and
+iabbrev   ADN       AND
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
