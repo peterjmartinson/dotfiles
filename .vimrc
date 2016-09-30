@@ -24,10 +24,11 @@ set wrap                            " Wrap text
 set linebreak                       " Don't break words at the wrap
 set nolist                          " Don't show eol and other chars
 set ignorecase                      " Ignore case while searching
+set incsearch                       " Start highlighting as you type in search
 set scrolloff=5                     " Scroll when 5 lines from top or bottom
 set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
-set hlsearch                        " Highlight all occurrences of a search
+set nohlsearch                      " Do not highlight all occurrences of a search
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
 set background=dark                 " Dark Solarize colorscheme
@@ -67,8 +68,12 @@ nnoremap <leader>' viW<esc>a'<esc>hBi'<esc>lE
 nnoremap <leader>( viW<esc>a)<esc>hBi(<esc>lE
 "  Centers text into a comment line
 nnoremap <leader>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+"  Another type of comment line
+nnoremap <leader>5 O<esc>80i%<esc>jo<esc>80i%<esc>k:center 80<cr>3hv0r%vey$A  <esc>p0k<c-v>ljjr-}
+
+
 nnoremap <C-n> :bnext<cr>
-" nnoremap <C-p> :bprevious<cr>
+nnoremap <C-N> :bprevious<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
 vmap > >gv
@@ -120,7 +125,10 @@ nnoremap <leader>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>p
 nnoremap <leader>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
 nnoremap <leader>s' {j<c-v>}kI'<esc>V}kk:s/\n/', /<cr>I(<esc>A')<esc>0:nohl<cr>
-
+"  get the next/previous SQL 'paragraph' to the top of the screen
+"  note, overrides tab-switching, which can be done with ctrl-pgdn/pgup
+nnoremap gt /select<cr>:nohl<cr>zt
+nnoremap gT ?select<cr>:nohl<cr>zt
 
 
 """"""""""""""""""""""""""
@@ -141,6 +149,20 @@ nnoremap <leader>nt :Simplenote -t<cr>
 
 iabbrev   pateint   patient
 iabbrev   PATEINT   PATIENT
+iabbrev   patietn   patient
+iabbrev   PATIETN   PATIENT
+iabbrev   patient_lname  patient_lname
+iabbrev   patient_fname  patient_fname
+iabbrev   patietn_lname  patient_lname
+iabbrev   patietn_fname  patient_fname
+iabbrev   patient_lnaem  patient_lname
+iabbrev   patient_fnaem  patient_fname
+iabbrev   PATIENT_LNAME  PATIENT_LNAME
+iabbrev   PATIENT_FNAME  PATIENT_FNAME
+iabbrev   PATIETN_LNAME  PATIENT_LNAME
+iabbrev   PATIETN_FNAME  PATIENT_FNAME
+iabbrev   PATIENT_LNAEM  PATIENT_LNAME
+iabbrev   PATIENT_FNAEM  PATIENT_FNAME
 iabbrev   adn       and
 iabbrev   ADN       AND
 
