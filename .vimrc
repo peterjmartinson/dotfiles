@@ -49,28 +49,26 @@ au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 " Keybindings "
 """""""""""""""
 
-" ,j->jslint | ,n->nohl | ,w->switch window
-" ctrl-n->next buffer   | ctrl-p->previous buffer | ctrl-c->close buffer
-" ,ev->edit .vimrc      | ,sv->reload .vimrc      | ,'->quote 'word'
-" > -> indent, stay in visual | < -> deindent, stay in visual
-" ,c->"clip" delete last character in line | ;=:
-let mapleader="\<tab>"
-nmap <leader>j :w<cr>:make<cr><cr>:copen<cr>
-nmap <leader>; :nohl<cr>
-nmap <leader>v :90vsplit<cr>
-nmap <leader>t :NERDTree<cr>
-nmap <leader>d :20Vexplore<cr>
-nmap <leader>- O<esc>80i-<esc>j0
-nmap <leader>u viwu
-nnoremap <leader>ev :split $MYVIMRC<cr>
-nnoremap <leader>sv :source $MYVIMRC<cr>
-nnoremap <leader>' viW<esc>a'<esc>hBi'<esc>lE
-nnoremap <leader>( viW<esc>a)<esc>hBi(<esc>lE
+" no more leader key!  it's all <space>
+" let mapleader="<tab>"
+nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
+nmap <space>; :nohl<cr>
+nmap <space>v :90vsplit<cr>
+nmap <space>t :NERDTree<cr>
+nmap <space>d :20Vexplore<cr>
+nmap <space>- O<esc>80i-<esc>j0
+nmap <space>u viwu
+nnoremap <space>ev :split $MYVIMRC<cr>
+nnoremap <space>sv :source $MYVIMRC<cr>
+nnoremap <space>' viW<esc>a'<esc>hBi'<esc>lE
+nnoremap <space>( viW<esc>a)<esc>hBi(<esc>lE
 "  Centers text into a comment line
-nnoremap <leader>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
+nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
 "  Another type of comment line
-nnoremap <leader>5 O<esc>80i%<esc>jo<esc>80i%<esc>k:center 80<cr>3hv0r%vey$A  <esc>p0k<c-v>ljjr-}
-
+nnoremap <space>5 O<esc>80i%<esc>jo<esc>80i%<esc>k:center 80<cr>3hv0r%vey$A  <esc>p0k<c-v>ljjr-}
+nnoremap <space>, $geld$0
+nnoremap <space><space> 0d$
+nnoremap <space>o O<esc>
 
 nnoremap <C-n> :bnext<cr>
 nnoremap <C-N> :bprevious<cr>
@@ -78,9 +76,6 @@ nnoremap <C-N> :bprevious<cr>
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
 vmap > >gv
 vmap < <gv
-nnoremap <leader>, $x0
-nnoremap <leader><space> 0d$
-nnoremap <leader>o O<esc>
 nnoremap ; :
 
 "  move screen lines with arrow keys
@@ -98,14 +93,14 @@ nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
 "  Special window layouts
-nmap <leader>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t
-nmap <leader>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t
-nmap <leader>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
-nmap <leader>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
+nmap <space>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t
+nmap <space>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t
+nmap <space>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
+nmap <space>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
 
 "  Folding keybindings
 "  note, requires :set foldmethod=marker
-" nnoremap <leader>f yiw{o/* <esc>pA {{{ */<esc>:center 80<cr>}O/* }}} */<esc>:center 80<cr>{j
+" nnoremap <space>f yiw{o/* <esc>pA {{{ */<esc>:center 80<cr>}O/* }}} */<esc>:center 80<cr>{j
 " set foldmethod=marker
 
 """""""""""""""""""""""""
@@ -113,18 +108,18 @@ nmap <leader>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split
 """""""""""""""""""""""""
 
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
-nnoremap <leader>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
+nnoremap <space>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table TABLE_NAME;
-nnoremap <leader>sdt yiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>lel
+nnoremap <space>sdt yiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
-nnoremap <leader>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
+nnoremap <space>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
 "  TABLE_NAME -> drop table/create table TABLE_NAME
-nnoremap <leader>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
+nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
 "  puts a column into a comma-separated pair of parentheses
 "    make sure there's a blank line underneath the list!!
-nnoremap <leader>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
+nnoremap <space>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <leader>s' {j<c-v>}kI'<esc>V}kk:s/\n/', /<cr>I(<esc>A')<esc>0:nohl<cr>
+nnoremap <space>s' {j<c-v>}kI'<esc>V}kk:s/\n/', /<cr>I(<esc>A')<esc>0:nohl<cr>
 "  get the next/previous SQL 'paragraph' to the top of the screen
 "  note, overrides tab-switching, which can be done with ctrl-pgdn/pgup
 nnoremap gt /select<cr>:nohl<cr>zt
@@ -139,9 +134,9 @@ nnoremap gT ?select<cr>:nohl<cr>zt
 
 source ~/.simplenoterc
 
-nnoremap <leader>nl :Simplenote -l<cr>
-nnoremap <leader>nn :Simplenote -n<cr>
-nnoremap <leader>nt :Simplenote -t<cr>
+nnoremap <space>nl :Simplenote -l<cr>
+nnoremap <space>nn :Simplenote -n<cr>
+nnoremap <space>nt :Simplenote -t<cr>
 
 """""""""""""""""""""""""""""""""""
 " Abbreviations / Typo correction "
