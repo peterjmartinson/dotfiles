@@ -4,14 +4,23 @@
 "  
 "  type 'vim --version' to see where to save this file
 "
-"  desired functionality:
-"    simplify statusbar when window is small
 
 set nocompatible
 
 "  Plugin manager
 execute pathogen#infect()
 filetype plugin on
+
+" Current plugins:
+"   NERDTree
+"   Ctrl-P
+"   Tabular
+"   Emmet
+"   Solarized Colorscheme
+"   Commentary
+"   Snipmate
+"   Airline
+
 autocmd FileType sql setlocal commentstring=--\ %s
 
 set tabstop=2                       " Tabs are 2 columns long
@@ -34,11 +43,32 @@ au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
 set background=dark                 " Dark Solarize colorscheme
 let g:solarized_termcolors=256      " Make Solarize use built in color palatte
 colorscheme solarized               " Colorscheme = solarized
-set laststatus=2                    " Show statusline always
-set statusline=\<%n\>\ %t\ \%m\%=\%c\ \|\ %l\ of\ %L
-set statusline+=\ \ \[\ %{strftime('%m\/%d\/%Y')}
-set statusline+=\ %{strftime('%I:%M\ %p')}\]
 let g:netrw_liststyle=3
+
+""""""""""""""
+" Statusline "
+""""""""""""""
+
+" testing out a statusline wordcount
+" it messes up INSERT mode for some reason...
+" function WordCount()
+"   let s:old_status = v:statusmsg
+"   exe "silent normal g\<c-g>"
+"   let s:word_count = str2nr(split(v:statusmsg)[11])
+"   let v:statusmsg = s:old_status
+"   return s:word_count
+" endfunction
+" set statusline=\<%n\>\ %t\ \%m\ %{WordCount()}\ words\%=
+
+set laststatus=2                    " Show statusline always
+"   Trying out vim-airline...
+let g:airline#extensions#wordcount#enabled = 1
+let g:airline#extensions#whitespace#enabled = 0
+let g:airline#extensions#wordcount#filetypes = 'md'
+" set statusline=\<%n\>\ %t\ \%m\%=
+" set statusline+=C\%c\ \|\ L%l\:%L
+" set statusline+=\ \ \[%{strftime('%m\/%d')}
+" set statusline+=\ %{strftime('%I:%M\ %p')}\]
 
 "  Highlight current line when in Insert mode
 hi CursorLine ctermbg=232 cterm=none
@@ -71,7 +101,6 @@ nnoremap <space><space> 0d$
 nnoremap <space>o O<esc>
 
 nnoremap <C-n> :bnext<cr>
-nnoremap <C-N> :bprevious<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
 vmap > >gv
@@ -93,8 +122,8 @@ nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
 "  Special window layouts
-nmap <space>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t
-nmap <space>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t
+nmap <space>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t<c-w>l
+nmap <space>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t<c-w>l
 nmap <space>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
 nmap <space>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
 
@@ -114,7 +143,7 @@ nnoremap <space>sdt yiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>lel
 "  TABLE_NAME -> create table TABLE_NAME nologging as
 nnoremap <space>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
 "  TABLE_NAME -> drop table/create table TABLE_NAME
-nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
+nnoremap <space>st viw<esc>a NOLOGGING AS<esc>bbbiCREATE TABLE <esc>wyiwO<esc>pviw<esc>a;<esc>hbiDROP TABLE <esc>j0
 "  puts a column into a comma-separated pair of parentheses
 "    make sure there's a blank line underneath the list!!
 nnoremap <space>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
@@ -125,6 +154,21 @@ nnoremap <space>s' {j<c-v>}kI'<esc>V}kk:s/\n/', /<cr>I(<esc>A')<esc>0:nohl<cr>
 nnoremap gt /select<cr>:nohl<cr>zt
 nnoremap gT ?select<cr>:nohl<cr>zt
 
+""""""""""""""""""""""""""""""
+" Markdown Specific Bindings "
+""""""""""""""""""""""""""""""
+
+" underline with =
+nnoremap <space>m= yypVr=o<esc>
+
+" underline with -
+nnoremap <space>m- yypVr-o<esc>
+
+
+
+
+
+
 
 """"""""""""""""""""""""""
 " Simplenote Integration "
@@ -132,11 +176,11 @@ nnoremap gT ?select<cr>:nohl<cr>zt
 " let g:SimplenoteUsername = "username"
 " let g:SimplenotePassword = "password"
 
-source ~/.simplenoterc
+" source ~/.simplenoterc
 
-nnoremap <space>nl :Simplenote -l<cr>
-nnoremap <space>nn :Simplenote -n<cr>
-nnoremap <space>nt :Simplenote -t<cr>
+" nnoremap <space>nl :Simplenote -l<cr>
+" nnoremap <space>nn :Simplenote -n<cr>
+" nnoremap <space>nt :Simplenote -t<cr>
 
 """""""""""""""""""""""""""""""""""
 " Abbreviations / Typo correction "
@@ -160,7 +204,8 @@ iabbrev   PATIENT_LNAEM  PATIENT_LNAME
 iabbrev   PATIENT_FNAEM  PATIENT_FNAME
 iabbrev   adn       and
 iabbrev   ADN       AND
-
+iabbrev   soem      some
+iabbrev   teh       the
 
 
 
