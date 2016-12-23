@@ -81,7 +81,6 @@ au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 
 " no more leader key!  it's all <space>
 " let mapleader="<tab>"
-nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
 nmap <space>; :nohl<cr>
 nmap <space>v :90vsplit<cr>
 nmap <space>t :NERDTree<cr>
@@ -99,7 +98,9 @@ nnoremap <space>5 O<esc>80i%<esc>jo<esc>80i%<esc>k:center 80<cr>3hv0r%vey$A  <es
 nnoremap <space>, $geld$0
 nnoremap <space><space> 0d$
 nnoremap <space>o O<esc>
+" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
 
+nnoremap <C-t> :tabnew<cr>:NERDTree<cr>
 nnoremap <C-n> :bnext<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
@@ -148,7 +149,7 @@ nnoremap <space>st viw<esc>a NOLOGGING AS<esc>bbbiCREATE TABLE <esc>wyiwO<esc>pv
 "    make sure there's a blank line underneath the list!!
 nnoremap <space>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <space>s' {j<c-v>}kI'<esc>V}kk:s/\n/', /<cr>I(<esc>A')<esc>0:nohl<cr>
+nnoremap <space>s' vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
 "  get the next/previous SQL 'paragraph' to the top of the screen
 "  note, overrides tab-switching, which can be done with ctrl-pgdn/pgup
 nnoremap gt /select<cr>:nohl<cr>zt
