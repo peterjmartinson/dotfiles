@@ -19,6 +19,7 @@ alias comma="sed -i 's/ *, */,/g' *"
 alias white="sed -i 's/^ *//g' *"
 
 alias cs="cheatsheet"
+alias python="winpty python.exe"
 
 # removes whitespace around commas and at beginnings of lines
 # used for dirty .csv files created by SQL*Plus
@@ -78,4 +79,15 @@ cheatsheet () {
   echo "Only print the file names, sorted with duplicates removed:";
   echo "(note, \$1 refers to everything up to the first colon)";
   echo "$ grep -r \"<str>\" <dir> | awk -F: '{print \$1}' | sort -u";
+  echo "";
+  echo "Print the file names and line numbers, sorted with duplicates removed:";
+  echo "$ grep -r \"<str>\" <dir> | awk -F: '{print \$1, \": line\", \$2}' | sort -u";
+  echo "";
+  echo "=======";
+  echo "= Vim =";
+  echo "=======";
+  echo "";
+  echo "File Manipulation via Command Line:";
+  echo "<Ctrl-z> : Pushes Vim into the background";
+  echo "$ fg     : Brings Vim back up where you left off";
 }

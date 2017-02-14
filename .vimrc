@@ -12,14 +12,14 @@ execute pathogen#infect()
 filetype plugin on
 
 " Current plugins:
-"   NERDTree
-"   Ctrl-P
-"   Tabular
-"   Emmet
-"   Solarized Colorscheme
-"   Commentary
-"   Snipmate
 "   Airline
+"   Commentary
+"   Ctrl-P
+"   Emmet
+"   NERDTree
+"   Snipmate
+"   Solarized Colorscheme
+"   Tabular
 
 autocmd FileType sql setlocal commentstring=--\ %s
 
@@ -61,52 +61,48 @@ let g:netrw_liststyle=3
 " set statusline=\<%n\>\ %t\ \%m\ %{WordCount()}\ words\%=
 
 set laststatus=2                    " Show statusline always
-"   Trying out vim-airline...
 let g:airline#extensions#wordcount#enabled = 1
 let g:airline#extensions#whitespace#enabled = 0
 let g:airline#extensions#wordcount#filetypes = 'md'
-" set statusline=\<%n\>\ %t\ \%m\%=
-" set statusline+=C\%c\ \|\ L%l\:%L
-" set statusline+=\ \ \[%{strftime('%m\/%d')}
-" set statusline+=\ %{strftime('%I:%M\ %p')}\]
 
 "  Highlight current line when in Insert mode
-hi CursorLine ctermbg=232 cterm=none
-au InsertEnter * set cursorline     " Insert mode line highlighting
-au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
+" hi CursorLine ctermbg=232 cterm=none
+" au InsertEnter * set cursorline     " Insert mode line highlighting
+" au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 
 """""""""""""""
 " Keybindings "
 """""""""""""""
 
+nnoremap ; :
+
 " no more leader key!  it's all <space>
 " let mapleader="<tab>"
-nmap <space>; :nohl<cr>
 nmap <space>v :90vsplit<cr>
 nmap <space>t :NERDTree<cr>
-nmap <space>d :20Vexplore<cr>
+" 80 character rule above current line
 nmap <space>- O<esc>80i-<esc>j0
-nmap <space>u viwu
-nnoremap <space>ev :split $MYVIMRC<cr>
-nnoremap <space>sv :source $MYVIMRC<cr>
-nnoremap <space>' viW<esc>a'<esc>hBi'<esc>lE
-nnoremap <space>( viW<esc>a)<esc>hBi(<esc>lE
 "  Centers text into a comment line
 nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
-"  Another type of comment line
+"  Bold comment line
 nnoremap <space>5 O<esc>80i%<esc>jo<esc>80i%<esc>k:center 80<cr>3hv0r%vey$A  <esc>p0k<c-v>ljjr-}
+"  Remove last character on line.  !!Not perfect!!
 nnoremap <space>, $geld$0
+"  Delete current line but leave a blank line there
 nnoremap <space><space> 0d$
+"  Add a blank line above current line
 nnoremap <space>o O<esc>
-" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
-
+"  Open a new tab with NERDTree
 nnoremap <C-t> :tabnew<cr>:NERDTree<cr>
 nnoremap <C-n> :bnext<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
+"  Stay in visual mode after indenting
 vmap > >gv
 vmap < <gv
-nnoremap ; :
+"  Run JSLint, or whatever linter you gots
+" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
+
 
 "  move screen lines with arrow keys
 imap <up> <C-O>gk
@@ -138,18 +134,17 @@ nmap <space>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<
 """""""""""""""""""""""""
 
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
-nnoremap <space>std viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
-"  TABLE_NAME -> drop table TABLE_NAME;
-nnoremap <space>sdt yiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>lel
-"  TABLE_NAME -> create table TABLE_NAME nologging as
-nnoremap <space>sct viw<esc>a nologging as<esc>bbbicreate table <esc>
+nnoremap <space>sd viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table/create table TABLE_NAME
-nnoremap <space>st viw<esc>a NOLOGGING AS<esc>bbbiCREATE TABLE <esc>wyiwO<esc>pviw<esc>a;<esc>hbiDROP TABLE <esc>j0
+nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
+
 "  puts a column into a comma-separated pair of parentheses
 "    make sure there's a blank line underneath the list!!
 nnoremap <space>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
 nnoremap <space>s' vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+"  Convert comma separated list into vertical list
+nnoremap <space>n, :s/,\s*/\r/g<cr>
 "  get the next/previous SQL 'paragraph' to the top of the screen
 "  note, overrides tab-switching, which can be done with ctrl-pgdn/pgup
 nnoremap gt /select<cr>:nohl<cr>zt
@@ -165,7 +160,8 @@ nnoremap <space>m= yypVr=o<esc>
 " underline with -
 nnoremap <space>m- yypVr-o<esc>
 
-
+" Title a journal entry with the date
+nnoremap <space>mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
 
 
 
@@ -207,7 +203,7 @@ iabbrev   adn       and
 iabbrev   ADN       AND
 iabbrev   soem      some
 iabbrev   teh       the
-
+iabbrev   joni      join
 
 
 
