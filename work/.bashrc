@@ -90,4 +90,17 @@ cheatsheet () {
   echo "File Manipulation via Command Line:";
   echo "<Ctrl-z> : Pushes Vim into the background";
   echo "$ fg     : Brings Vim back up where you left off";
+  echo "=======";
+  echo "= Git =";
+  echo "=======";
+  echo "";
+  echo "Undo changes to uncommitted files ";
+  echo "$ git checkout -- <filename>";
+  echo "";
+  echo "See history of changes to a specific file ";
+  echo "$ git log --follow -p -- <filename>";
+  echo "";
+  echo "Overwrite local changes with master repo ";
+  echo "(e.g. you did work on another machine that's better) ";
+  echo "$ git fetch --all $ git reset --hard origin/master";
 }
