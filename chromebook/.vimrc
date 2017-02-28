@@ -29,7 +29,7 @@ set softtabstop=2                   " Typing Tab produces 2 spaces
 set shiftwidth=2                    " '>' and '<' indents 2 spaces
 set autoindent                      " Smart indenting
 set number                          " Turn on line numbers
-set wrap                            " Wrap text
+set nowrap                            " Wrap text
 set linebreak                       " Don't break words at the wrap
 set nolist                          " Don't show eol and other chars
 set ignorecase                      " Ignore case while searching
@@ -81,7 +81,7 @@ nnoremap ; :
 nmap <space>v :90vsplit<cr>
 nmap <space>t :NERDTree<cr>
 " 80 character rule above current line
-nmap <space>- O<esc>80i-<esc>j0
+nmap <space>- O<esc>70i-<esc>j0
 "  Centers text into a comment line
 nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
 "  Bold comment line
