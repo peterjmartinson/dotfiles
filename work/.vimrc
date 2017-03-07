@@ -73,6 +73,8 @@ nnoremap <space>, $geld$0
 nnoremap <space><space> 0d$
 "  Add a blank line above current line
 nnoremap <space>o O<esc>
+"  Delete all the blank lines between paragraphs
+nnoremap <space>} V}{kd
 "  Open a new tab with NERDTree
 nnoremap <C-t> :tabnew<cr>:NERDTree<cr>
 nnoremap <C-n> :bnext<cr>
@@ -115,9 +117,9 @@ nnoremap <space>sd viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
 
 "  puts a column into a comma-separated pair of parentheses
-nnoremap <space>s( vipk:s/\n/, /<cr>I(<esc>A)<esc>0
+nnoremap <space>s( vip:sort u<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <space>s' vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+nnoremap <space>s' vip:sort u<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
 "  Convert comma separated list into vertical list
 nnoremap <space>n, :s/,\s*/\r/g<cr>
 "  get the next/previous SQL 'paragraph' to the top of the screen
