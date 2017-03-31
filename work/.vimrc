@@ -14,7 +14,6 @@ filetype plugin on
 " Current plugins:
 "   Airline
 "   Commentary
-"   Ctrl-P
 "   Emmet
 "   NERDTree
 "   Snipmate
@@ -29,7 +28,7 @@ set softtabstop=2                   " Typing Tab produces 2 spaces
 set shiftwidth=2                    " '>' and '<' indents 2 spaces
 set autoindent                      " Smart indenting
 set number                          " Turn on line numbers
-set wrap                            " Wrap text
+set nowrap                          " Do not wrap text
 set linebreak                       " Don't break words at the wrap
 set nolist                          " Don't show eol and other chars
 set ignorecase                      " Ignore case while searching
@@ -49,26 +48,10 @@ let g:netrw_liststyle=3
 " Statusline "
 """"""""""""""
 
-" testing out a statusline wordcount
-" it messes up INSERT mode for some reason...
-" function WordCount()
-"   let s:old_status = v:statusmsg
-"   exe "silent normal g\<c-g>"
-"   let s:word_count = str2nr(split(v:statusmsg)[11])
-"   let v:statusmsg = s:old_status
-"   return s:word_count
-" endfunction
-" set statusline=\<%n\>\ %t\ \%m\ %{WordCount()}\ words\%=
-
 set laststatus=2                    " Show statusline always
 let g:airline#extensions#wordcount#enabled = 1
 let g:airline#extensions#whitespace#enabled = 0
 let g:airline#extensions#wordcount#filetypes = 'md'
-
-"  Highlight current line when in Insert mode
-" hi CursorLine ctermbg=232 cterm=none
-" au InsertEnter * set cursorline     " Insert mode line highlighting
-" au InsertLeave * set nocursorline   " End highlighting outside of Insert mode
 
 """""""""""""""
 " Keybindings "
@@ -76,8 +59,6 @@ let g:airline#extensions#wordcount#filetypes = 'md'
 
 nnoremap ; :
 
-" no more leader key!  it's all <space>
-" let mapleader="<tab>"
 nmap <space>v :90vsplit<cr>
 nmap <space>t :NERDTree<cr>
 " 80 character rule above current line
@@ -92,6 +73,8 @@ nnoremap <space>, $geld$0
 nnoremap <space><space> 0d$
 "  Add a blank line above current line
 nnoremap <space>o O<esc>
+"  Delete all the blank lines between paragraphs
+nnoremap <space>} V}{kd
 "  Open a new tab with NERDTree
 nnoremap <C-t> :tabnew<cr>:NERDTree<cr>
 nnoremap <C-n> :bnext<cr>
@@ -124,11 +107,6 @@ nmap <space>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t<c-w>l
 nmap <space>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
 nmap <space>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
 
-"  Folding keybindings
-"  note, requires :set foldmethod=marker
-" nnoremap <space>f yiw{o/* <esc>pA {{{ */<esc>:center 80<cr>}O/* }}} */<esc>:center 80<cr>{j
-" set foldmethod=marker
-
 """""""""""""""""""""""""
 " SQL specific bindings "
 """""""""""""""""""""""""
@@ -139,10 +117,9 @@ nnoremap <space>sd viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
 
 "  puts a column into a comma-separated pair of parentheses
-"    make sure there's a blank line underneath the list!!
-nnoremap <space>s( {jV}kk:s/\n/, /<cr>:nohl<cr>I(<esc>A)<esc>0
+nnoremap <space>s( vip:sort u<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <space>s' vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+nnoremap <space>s' vip:sort u<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
 "  Convert comma separated list into vertical list
 nnoremap <space>n, :s/,\s*/\r/g<cr>
 "  get the next/previous SQL 'paragraph' to the top of the screen
