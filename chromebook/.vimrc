@@ -9,6 +9,7 @@ set nocompatible
 
 "  Plugin manager
 execute pathogen#infect()
+execute pathogen#helptags()
 filetype plugin on
 
 " Current plugins:
