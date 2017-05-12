@@ -23,6 +23,7 @@ filetype plugin on
 "   Tabular
 
 autocmd FileType sql setlocal commentstring=--\ %s
+au BufNewFile,BufFilePre,BufRead *.md set filetype=markdown
 
 set tabstop=2                       " Tabs are 2 columns long
 set expandtab                       " Typing Tab produces spaces, not tabs
@@ -44,7 +45,7 @@ au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
 set background=dark                 " Dark Solarize colorscheme
 let g:solarized_termcolors=256      " Make Solarize use built in color palatte
 colorscheme solarized               " Colorscheme = solarized
-let g:netrw_liststyle=3
+" let g:netrw_liststyle=3
 
 """"""""""""""
 " Statusline "
@@ -62,9 +63,12 @@ let g:netrw_liststyle=3
 " set statusline=\<%n\>\ %t\ \%m\ %{WordCount()}\ words\%=
 
 set laststatus=2                    " Show statusline always
-let g:airline#extensions#wordcount#enabled = 1
-let g:airline#extensions#whitespace#enabled = 0
-let g:airline#extensions#wordcount#filetypes = 'md'
+" let g:airline#extensions#wordcount#enabled = 1
+" let g:airline#extensions#whitespace#enabled = 0
+" let g:airline#extensions#wordcount#filetypes = 'md'
+set statusline=\ %t\ %{fugitive#statusline()}\ \%m\%=\%c\ \|\ %l\/\%L\ 
+" set statusline+=\ \ \[\ %{strftime('%m\/%d\/%Y')}
+" set statusline+=\ %{strftime('%I:%M\ %p')}\]
 
 "  Highlight current line when in Insert mode
 " hi CursorLine ctermbg=232 cterm=none
@@ -80,7 +84,8 @@ nnoremap ; :
 " no more leader key!  it's all <space>
 " let mapleader="<tab>"
 nmap <space>v :90vsplit<cr>
-nmap <space>t :NERDTree<cr>
+nmap <space>e :Explore<cr>
+" nmap <space>t :NERDTree<cr>
 " 80 character rule above current line
 nmap <space>- O<esc>70i-<esc>j0
 "  Centers text into a comment line
@@ -102,7 +107,7 @@ nnoremap <esc>c :bprevious\|bwipeout #<cr>
 vmap > >gv
 vmap < <gv
 "  Run JSLint, or whatever linter you gots
-" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
+nmap <space>j :JSHint<cr>
 
 
 "  move screen lines with arrow keys
