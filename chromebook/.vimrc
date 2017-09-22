@@ -33,40 +33,33 @@ set autoindent                      " Smart indenting
 set number                          " Turn on line numbers
 set nowrap                            " Wrap text
 set linebreak                       " Don't break words at the wrap
+set textwidth=70
 set nolist                          " Don't show eol and other chars
 set ignorecase                      " Ignore case while searching
 set incsearch                       " Start highlighting as you type in search
-set scrolloff=5                     " Scroll when 5 lines from top or bottom
+set scrolloff=2                     " Scroll when 5 lines from top or bottom
 set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
 set nohlsearch                      " Do not highlight all occurrences of a search
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
-set background=dark                 " Dark Solarize colorscheme
 let g:solarized_termcolors=256      " Make Solarize use built in color palatte
-colorscheme solarized               " Colorscheme = solarized
+" colorscheme solarized               " Colorscheme = solarized
+colorscheme badwolf
+" colorscheme gruvbox
+" set background=dark                 " Dark Solarize colorscheme
 " let g:netrw_liststyle=3
 
 """"""""""""""
 " Statusline "
 """"""""""""""
 
-" testing out a statusline wordcount
-" it messes up INSERT mode for some reason...
-" function WordCount()
-"   let s:old_status = v:statusmsg
-"   exe "silent normal g\<c-g>"
-"   let s:word_count = str2nr(split(v:statusmsg)[11])
-"   let v:statusmsg = s:old_status
-"   return s:word_count
-" endfunction
-" set statusline=\<%n\>\ %t\ \%m\ %{WordCount()}\ words\%=
-
 set laststatus=2                    " Show statusline always
 " let g:airline#extensions#wordcount#enabled = 1
 " let g:airline#extensions#whitespace#enabled = 0
 " let g:airline#extensions#wordcount#filetypes = 'md'
-set statusline=\ %t\ %{fugitive#statusline()}\ \%m\%=\%c\ \|\ %l\/\%L\ 
+" set statusline=\ %t\ %{fugitive#statusline()}\ \%m\%=\%c\ \|\ %l\/\%L\ 
+set statusline=\ %t\ \%m\%=\%c\ \|\ %l\/\%L\ 
 " set statusline+=\ \ \[\ %{strftime('%m\/%d\/%Y')}
 " set statusline+=\ %{strftime('%I:%M\ %p')}\]
 
@@ -83,7 +76,7 @@ nnoremap ; :
 
 " no more leader key!  it's all <space>
 " let mapleader="<tab>"
-nmap <space>v :90vsplit<cr>
+nmap <space>v :Vexplore<cr>
 nmap <space>e :Explore<cr>
 " nmap <space>t :NERDTree<cr>
 " 80 character rule above current line
@@ -101,6 +94,7 @@ nnoremap <space>o O<esc>
 "  Open a new tab with NERDTree
 nnoremap <esc>t :tabnew<cr>:NERDTree<cr>
 nnoremap <esc>n :bnext<cr>
+nnoremap <esc>m :bprevious<cr>
 " close the buffer, but not the split
 nnoremap <esc>c :bprevious\|bwipeout #<cr>
 "  Stay in visual mode after indenting
@@ -129,6 +123,8 @@ nnoremap <esc>h <C-w>h
 nnoremap <esc>j <C-w>j
 nnoremap <esc>k <C-w>k
 nnoremap <esc>l <C-w>l
+nnoremap \ <C-w>w
+nnoremap <C-\> :tabnext<cr>
 
 "  Special window layouts
 nmap <space>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t<c-w>l
@@ -136,10 +132,11 @@ nmap <space>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t<c-w>l
 nmap <space>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
 nmap <space>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
 
-"  Folding keybindings
-"  note, requires :set foldmethod=marker
-" nnoremap <space>f yiw{o/* <esc>pA {{{ */<esc>:center 80<cr>}O/* }}} */<esc>:center 80<cr>{j
-" set foldmethod=marker
+" ctrl-p
+nnoremap <esc>p :CtrlP<cr>
+
+" autocomplete
+inoremap <esc>. <C-n>
 
 """""""""""""""""""""""""
 " SQL specific bindings "
