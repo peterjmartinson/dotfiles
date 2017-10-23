@@ -40,52 +40,66 @@ set t_Co=256                        " Use 256 colors
 set nohlsearch                      " Do not highlight all occurrences of a search
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
-set background=dark                 " Dark Solarize colorscheme
 let g:solarized_termcolors=256      " Make Solarize use built in color palatte
-colorscheme solarized               " Colorscheme = solarized
-let g:netrw_liststyle=3
+" colorscheme solarized               " Colorscheme = solarized
+" colorscheme badwolf
+colorscheme gruvbox
+set background=dark                 " Dark Solarize colorscheme
+" let g:netrw_liststyle=3
 
 """"""""""""""
 " Statusline "
 """"""""""""""
 
+" set laststatus=2                    " Show statusline always
+" let g:airline#extensions#wordcount#enabled = 1
+" let g:airline#extensions#whitespace#enabled = 0
+" let g:airline#extensions#wordcount#filetypes = 'md'
+
 set laststatus=2                    " Show statusline always
-let g:airline#extensions#wordcount#enabled = 1
-let g:airline#extensions#whitespace#enabled = 0
-let g:airline#extensions#wordcount#filetypes = 'md'
+" set statusline=\ %t\ \%m\%=
+set statusline=\ %t\ %{fugitive#statusline()}\%m\%=
+set statusline+=\ \%c\ \|\ %l\/%L\ 
+" set statusline+=\ \ \[\ %{strftime('%m\/%d\/%Y')}
+" set statusline+=\ %{strftime('%I:%M\ %p')}\]
 
 """""""""""""""
 " Keybindings "
 """""""""""""""
 
-nnoremap ; :
+" nnoremap ; :
 
-nmap <space>v :90vsplit<cr>
-nmap <space>t :NERDTree<cr>
+"  slap in a shebang
+nnoremap ! i#!/bin/sh<cr><esc>
+
+"  open a file manager
+nnoremap <space>t :NERDTree<cr>
+nnoremap <space>e :Explore<cr>
+nnoremap <C-t> :tabnew<cr>:Explore<cr>
+
+"  Put in the current date
+nnoremap gp "=strftime('%B %d, %Y')<cr>p
 " 80 character rule above current line
-nmap <space>- O<esc>80i-<esc>j0
+nnoremap <space>- O<esc>80i-<esc>j0
 "  Centers text into a comment line
-nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<esc>0
-"  Bold comment line
-nnoremap <space>5 O<esc>80i%<esc>jo<esc>80i%<esc>k:center 80<cr>3hv0r%vey$A  <esc>p0k<c-v>ljjr-}
-"  Remove last character on line.  !!Not perfect!!
-nnoremap <space>, $geld$0
+nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<cr><esc>
+"  Remove last character on line.
+nnoremap <space>, $x0
 "  Delete current line but leave a blank line there
 nnoremap <space><space> 0d$
 "  Add a blank line above current line
 nnoremap <space>o O<esc>
 "  Delete all the blank lines between paragraphs
 nnoremap <space>} V}{kd
-"  Open a new tab with NERDTree
-nnoremap <C-t> :tabnew<cr>:NERDTree<cr>
+"  Copy an entire paragraph
+nnoremap , yip
 nnoremap <C-n> :bnext<cr>
+nnoremap <C-m> :bprevious<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
 "  Stay in visual mode after indenting
-vmap > >gv
-vmap < <gv
-"  Run JSLint, or whatever linter you gots
-" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
+" vmap > >gv
+" vmap < <gv
 
 
 "  move screen lines with arrow keys
@@ -96,17 +110,15 @@ nmap <down> gj
 vmap <up> gk
 vmap <down> gj
 
-"  Switch windows using CTRL-<motion key>
+"  Switch splits using CTRL-<motion key>
 nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
-"  Special window layouts
-nmap <space>1 :only<cr>:NERDTree<cr><c-w><c-w>:90vsplit<cr>:25split<cr><c-w>t<c-w>l
-nmap <space>2 :only<cr>:NERDTree<cr><c-w><c-w>:split<cr><c-w>t<c-w>l
-nmap <space>3 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>t<c-w>l
-nmap <space>4 :only<cr>:NERDTree<cr><c-w><c-w>:vsplit<cr>:split<cr><c-w>l:split<cr><c-w>t<c-w>l
+"  Cycle through splits with \ -> save left pinky!
+nnoremap \ <C-w>w
+nnoremap <C-\> :tabnext<cr>
 
 """""""""""""""""""""""""
 " SQL specific bindings "
@@ -117,16 +129,12 @@ nnoremap <space>sd viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
 "  TABLE_NAME -> drop table/create table TABLE_NAME
 nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
 
-"  puts a column into a comma-separated pair of parentheses
-nnoremap <space>s( vip:sort u<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
+"  format list of values to -> (a, b, c, etc.)
+nnoremap <space>s( vip:sort un<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <space>s' vip:sort u<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+nnoremap <space>s' vip:sort un<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
 "  Convert comma separated list into vertical list
 nnoremap <space>n, :s/,\s*/\r/g<cr>
-"  get the next/previous SQL 'paragraph' to the top of the screen
-"  note, overrides tab-switching, which can be done with ctrl-pgdn/pgup
-nnoremap gt /select<cr>:nohl<cr>zt
-nnoremap gT ?select<cr>:nohl<cr>zt
 
 """"""""""""""""""""""""""""""
 " Markdown Specific Bindings "
@@ -142,20 +150,29 @@ nnoremap <space>m- yypVr-o<esc>
 nnoremap <space>mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
 
 
+"""""""""""""""""""
+" Linter Settings "
+"""""""""""""""""""
+
+"  Run JSLint, or whatever linter you gots
+" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
+
+" Syntastic recommended settings
+" set statusline+=%#warningmsg#
+" set statusline+=%{SyntasticStatuslineFlag()}
+" set statusline+=%*
+
+" let g:syntastic_always_populate_loc_list = 1
+" let g:syntastic_auto_loc_list = 1
+" let g:syntastic_check_on_open = 1
+" let g:syntastic_check_on_wq = 0
+let g:syntastic_mode_map = { 'mode':'passive', 'active_filetypes':[], 'passive_filetypes':[] }
+
+" run Syntastic
+nnoremap gs :SyntasticCheck<cr>
 
 
 
-""""""""""""""""""""""""""
-" Simplenote Integration "
-""""""""""""""""""""""""""
-" let g:SimplenoteUsername = "username"
-" let g:SimplenotePassword = "password"
-
-" source ~/.simplenoterc
-
-" nnoremap <space>nl :Simplenote -l<cr>
-" nnoremap <space>nn :Simplenote -n<cr>
-" nnoremap <space>nt :Simplenote -t<cr>
 
 """""""""""""""""""""""""""""""""""
 " Abbreviations / Typo correction "
@@ -165,6 +182,8 @@ iabbrev   pateint   patient
 iabbrev   PATEINT   PATIENT
 iabbrev   patietn   patient
 iabbrev   PATIETN   PATIENT
+iabbrev   patient_name  patient_name
+iabbrev   PATIENT_NAME  PATIENT_NAME
 iabbrev   patient_lname  patient_lname
 iabbrev   patient_fname  patient_fname
 iabbrev   patietn_lname  patient_lname
@@ -182,30 +201,6 @@ iabbrev   ADN       AND
 iabbrev   soem      some
 iabbrev   teh       the
 iabbrev   joni      join
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
