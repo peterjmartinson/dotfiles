@@ -11,15 +11,6 @@ set nocompatible
 execute pathogen#infect()
 filetype plugin on
 
-" Current plugins:
-"   Airline
-"   Commentary
-"   Emmet
-"   NERDTree
-"   Snipmate
-"   Solarized Colorscheme
-"   Tabular
-
 autocmd FileType sql setlocal commentstring=--\ %s
 
 set tabstop=2                       " Tabs are 2 columns long
@@ -37,6 +28,7 @@ set scrolloff=5                     " Scroll when 5 lines from top or bottom
 set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
 set nohlsearch                      " Do not highlight all occurrences of a search
+set history=200                     " Keep history of 200 commands
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
 let g:solarized_termcolors=256      " Make Solarize use built in color palatte
@@ -44,29 +36,18 @@ let g:solarized_termcolors=256      " Make Solarize use built in color palatte
 " colorscheme badwolf
 colorscheme gruvbox
 set background=dark                 " Dark Solarize colorscheme
-" let g:netrw_liststyle=3
 
 """"""""""""""
 " Statusline "
 """"""""""""""
 
-" set laststatus=2                    " Show statusline always
-" let g:airline#extensions#wordcount#enabled = 1
-" let g:airline#extensions#whitespace#enabled = 0
-" let g:airline#extensions#wordcount#filetypes = 'md'
-
 set laststatus=2                    " Show statusline always
-" set statusline=\ %t\ \%m\%=
 set statusline=\ %t\ %{fugitive#statusline()}\%m\%=
 set statusline+=\ \%c\ \|\ %l\/%L\ 
-" set statusline+=\ \ \[\ %{strftime('%m\/%d\/%Y')}
-" set statusline+=\ %{strftime('%I:%M\ %p')}\]
 
 """""""""""""""
 " Keybindings "
 """""""""""""""
-
-" nnoremap ; :
 
 "  slap in a shebang
 nnoremap ! i#!/bin/sh<cr><esc>
@@ -88,17 +69,10 @@ nnoremap <space>, $x0
 nnoremap <space><space> 0d$
 "  Add a blank line above current line
 nnoremap <space>o O<esc>
-"  Delete all the blank lines between paragraphs
-nnoremap <space>} V}{kd
 "  Copy an entire paragraph
 nnoremap , yip
-nnoremap <C-n> :bnext<cr>
-nnoremap <C-m> :bprevious<cr>
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
-"  Stay in visual mode after indenting
-" vmap > >gv
-" vmap < <gv
 
 
 "  move screen lines with arrow keys
@@ -119,6 +93,14 @@ nnoremap <C-l> <C-w>l
 nnoremap \ <C-w>w
 nnoremap <C-\> :tabnext<cr>
 
+"  Cycle through buffers
+nnoremap <silent>]b :bnext<cr>
+nnoremap <silent>[b :bprevious<cr>
+
+"  Cycle through args list
+nnoremap <C-n> :next<cr>
+nnoremap <C-m> :previous<cr>
+
 """""""""""""""""""""""""
 " SQL specific bindings "
 """""""""""""""""""""""""
@@ -132,8 +114,6 @@ nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pv
 nnoremap <space>s( vip:sort un<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
 "  format list of values to -> ('a', 'b', 'c', etc.)
 nnoremap <space>s' vip:sort un<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
-"  Convert comma separated list into vertical list
-nnoremap <space>n, :s/,\s*/\r/g<cr>
 
 """"""""""""""""""""""""""""""
 " Markdown Specific Bindings "
