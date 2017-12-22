@@ -1,14 +1,21 @@
-echo "cheatsheet -> print a list of useful commands (EXPERIMENTAL!)"
-echo "code       -> /c/Users/martinsp/Code/"
+echo "archive    -> /i/Athena/Report Requests/martinson/"
+echo "transplant -> /i/Transplant - Datawarehouse Team/"
+echo "report     -> /c/Users/martinsp/REQUESTS/"
 echo "documents  -> /c/Users/martinsp/Documents/"
-echo "report     -> /i/Athena/Report Requests/martinson/"
-echo "txp        -> /i/Transplant - Datawarehouse Team/"
+echo "code       -> /c/Users/martinsp/Code/"
+echo "test       -> /c/Users/martinsp/Code/Work/Geocode Testing"
+echo "cheatsheet -> print a list of useful commands"
+echo "snip       -> edit the Vim snippet list"
 
-alias report='cd /i/Athena/Report\ Requests/martinson/'
+alias archive='cd /i/Athena/Report\ Requests/martinson/'
+alias report='cd ~/REQUESTS/'
 alias code='cd /c/Users/martinsp/Code'
 alias documents='cd /c/Users/martinsp/Documents'
-alias txp='cd /i/Transplant\ -\ Datawarehouse\ Team/'
+alias transplant='cd /i/Transplant\ -\ Datawarehouse\ Team/'
+alias test='cd /c/Users/martinsp/Code/Work/Geocode\ Testing'
 alias sql='sqlplus REPORTS_ADMIN/Ad4ReportDb@"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=DACDatabasePDSProd)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=pdsprd.uphs.upenn.edu)))"'
+alias snip='vim .vim/after/snippets/_.snippets'
+alias work='cd ~/REQUESTS/ ; vim -c Explore'
 
 alias ll='ls -l'
 alias la='ls -a'
@@ -18,8 +25,12 @@ alias tree="find . -print | sed -e '/^\.$/d' -e 's/[^-][^\/]*\//--/g' -e 's/^/  
 alias comma="sed -i 's/ *, */,/g' *"
 alias white="sed -i 's/^ *//g' *"
 
+alias txp="transplant"
 alias cs="cheatsheet"
 alias python="winpty python.exe"
+alias mocha="mocha --colors"
+
+alias snip="vim .vim/after/snippets/_.snippets"
 
 # removes whitespace around commas and at beginnings of lines
 # used for dirty .csv files created by SQL*Plus
@@ -34,16 +45,6 @@ trimbar () {
   sed -i 's/ *| */|/g' *.csv;
   sed -i 's/^ *//g' *.csv;
   sed -i '$d' *.csv;
-}
-
-# Creates a checklist.txt for all files in a directory
-#
-#   [ ] Item 1
-#   [ ] Item 2
-#
-checklist () {
-  ls | sed 's/^/\[ \] /' > checklist.txt;
-  sed -i '/checklist/d' checklist.txt;
 }
 
 cheatsheet () {
@@ -82,25 +83,4 @@ cheatsheet () {
   echo "";
   echo "Print the file names and line numbers, sorted with duplicates removed:";
   echo "$ grep -r \"<str>\" <dir> | awk -F: '{print \$1, \": line\", \$2}' | sort -u";
-  echo "";
-  echo "=======";
-  echo "= Vim =";
-  echo "=======";
-  echo "";
-  echo "File Manipulation via Command Line:";
-  echo "<Ctrl-z> : Pushes Vim into the background";
-  echo "$ fg     : Brings Vim back up where you left off";
-  echo "=======";
-  echo "= Git =";
-  echo "=======";
-  echo "";
-  echo "Undo changes to uncommitted files ";
-  echo "$ git checkout -- <filename>";
-  echo "";
-  echo "See history of changes to a specific file ";
-  echo "$ git log --follow -p -- <filename>";
-  echo "";
-  echo "Overwrite local changes with master repo ";
-  echo "(e.g. you did work on another machine that's better) ";
-  echo "$ git fetch --all $ git reset --hard origin/master";
 }

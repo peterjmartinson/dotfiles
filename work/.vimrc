@@ -4,12 +4,13 @@
 "  
 "  type 'vim --version' to see where to save this file
 "
+" *** IDEAS ***
+" delete the trailing comma or space
 
 set nocompatible
 
 "  Plugin manager
 execute pathogen#infect()
-execute pathogen#helptags()
 filetype plugin on
 
 autocmd FileType sql setlocal commentstring=--\ %s
@@ -32,9 +33,6 @@ set nohlsearch                      " Do not highlight all occurrences of a sear
 set history=200                     " Keep history of 200 commands
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
-let g:solarized_termcolors=256      " Make Solarize use built in color palatte
-" colorscheme solarized               " Colorscheme = solarized
-" colorscheme badwolf
 colorscheme gruvbox
 set background=dark                 " Dark Solarize colorscheme
 
@@ -44,7 +42,7 @@ set background=dark                 " Dark Solarize colorscheme
 
 set laststatus=2                    " Show statusline always
 set statusline=\ %t\ %{fugitive#statusline()}\%m\%=
-set statusline+=\ \%c\ \|\ %l\/%L\ 
+set statusline+=\ \%c\ \|\ %l\/%L\ (%p\%%)
 
 """""""""""""""
 " Keybindings "
@@ -56,6 +54,7 @@ nnoremap ! i#!/bin/sh<cr><esc>
 "  open a file manager
 nnoremap <space>t :NERDTree<cr>
 nnoremap <space>e :Explore<cr>
+nnoremap <space>v :Vexplore!<cr>
 nnoremap <C-t> :tabnew<cr>:Explore<cr>
 
 "  Put in the current date
@@ -71,7 +70,7 @@ nnoremap <space><space> 0d$
 "  Add a blank line above current line
 nnoremap <space>o O<esc>
 "  Copy an entire paragraph
-nnoremap , yip
+nnoremap Y m`yip
 " close the buffer, but not the split
 nnoremap <C-c> :bprevious\|bwipeout #<cr>
 
@@ -90,7 +89,7 @@ nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
-"  Cycle through splits with \ -> save left pinky!
+"  Cycle through splits and tabs with \ -> save left pinky!
 nnoremap \ <C-w>w
 nnoremap <C-\> :tabnext<cr>
 
@@ -100,7 +99,7 @@ nnoremap <silent>[b :bprevious<cr>
 
 "  Cycle through args list
 nnoremap <C-n> :next<cr>
-nnoremap <C-m> :previous<cr>
+nnoremap <C-p> :previous<cr>
 
 """""""""""""""""""""""""
 " SQL specific bindings "
