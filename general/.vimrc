@@ -36,12 +36,20 @@ set makeprg=make\ %<
 
 colorscheme gruvbox
 set background=dark                 " Dark colorscheme
+
 if &term =~ '256color'  
   " disable Background Color Erase (BCE) so that color schemes  
   " render properly when inside 256-color tmux and GNU screen.  
   " see also http://snk.tuxfamily.org/log/vim-256color-bce.html  
   set t_ut=  
 endif
+
+set noerrorbells visualbell t_vb=
+if has('autocmd')
+  autocmd GUIEnter * set visualbell t_vb=
+endif
+
+
 
 """"""""""""""
 " Statusline "
@@ -94,6 +102,14 @@ nnoremap gs :Gstatus<cr>
 "  Cycle through splits with \ -> save left pinky!
 nnoremap \ <C-w>w
 nnoremap <C-\> :tabnext<cr>
+nnoremap <C-6> <C-^>
+
+"  toggle wrap
+nnoremap [w :set wrap<cr>
+nnoremap ]w :set nowrap<cr>
+
+
+
 
 """""""""""""
 " Compiling "
