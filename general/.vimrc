@@ -13,7 +13,6 @@ execute pathogen#helptags()
 filetype plugin on
 
 autocmd FileType sql setlocal commentstring=--\ %s
-au BufNewFile,BufFilePre,BufRead *.md set filetype=markdown
 
 set tabstop=2                       " Tabs are 2 columns long
 set expandtab                       " Typing Tab produces spaces, not tabs
@@ -37,12 +36,20 @@ set makeprg=make\ %<
 
 colorscheme gruvbox
 set background=dark                 " Dark colorscheme
+
 if &term =~ '256color'  
   " disable Background Color Erase (BCE) so that color schemes  
   " render properly when inside 256-color tmux and GNU screen.  
   " see also http://snk.tuxfamily.org/log/vim-256color-bce.html  
   set t_ut=  
 endif
+
+set noerrorbells visualbell t_vb=
+if has('autocmd')
+  autocmd GUIEnter * set visualbell t_vb=
+endif
+
+
 
 """"""""""""""
 " Statusline "
@@ -95,12 +102,14 @@ nnoremap gs :Gstatus<cr>
 "  Cycle through splits with \ -> save left pinky!
 nnoremap \ <C-w>w
 nnoremap <C-\> :tabnext<cr>
+nnoremap <C-6> <C-^>
 
+"  toggle wrap
 nnoremap [w :set wrap<cr>
 nnoremap ]w :set nowrap<cr>
 
-nnoremap [p :set paste<cr>
-nnoremap ]p :set nopaste<cr>
+
+
 
 """""""""""""
 " Compiling "
