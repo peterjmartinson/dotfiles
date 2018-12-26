@@ -4,8 +4,6 @@
 "  
 "  type 'vim --version' to see where to save this file
 "
-" *** IDEAS ***
-" delete the trailing comma or space
 
 set nocompatible
 
@@ -26,10 +24,10 @@ set linebreak                       " Don't break words at the wrap
 set nolist                          " Don't show eol and other chars
 set ignorecase                      " Ignore case while searching
 set incsearch                       " Start highlighting as you type in search
+set nohlsearch                      " Do not highlight all occurrences of a search
 set scrolloff=5                     " Scroll when 5 lines from top or bottom
 set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
-set nohlsearch                      " Do not highlight all occurrences of a search
 set history=200                     " Keep history of 200 commands
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
@@ -41,7 +39,12 @@ set background=dark                 " Dark Solarize colorscheme
 """"""""""""""
 
 set laststatus=2                    " Show statusline always
-set statusline=\ %t\ %{fugitive#statusline()}\%m\%=
+set statusline=
+set statusline+=\ %t\ 
+set statusline+=%#CursorLineNr#
+set statusline+=%{fugitive#statusline()}
+set statusline+=%*
+set statusline+=\ \%m\%=
 set statusline+=\ \%c\ \|\ %l\/%L\ (%p\%%)
 
 """""""""""""""
@@ -52,28 +55,25 @@ set statusline+=\ \%c\ \|\ %l\/%L\ (%p\%%)
 nnoremap ! i#!/bin/sh<cr><esc>
 
 "  open a file manager
-nnoremap <space>t :NERDTree<cr>
 nnoremap <space>e :Explore<cr>
 nnoremap <space>v :Vexplore!<cr>
-nnoremap <C-t> :tabnew<cr>:Explore<cr>
+nnoremap <space>t :Texplore<cr>
 
 "  Put in the current date
 nnoremap gp "=strftime('%B %d, %Y')<cr>p
+nnoremap gP "=strftime('%m/%d/%Y')<cr>p
+
 " 80 character rule above current line
-nnoremap <space>- O<esc>80i-<esc>j0
-"  Centers text into a comment line
+nnoremap <space>- O--------------------------------------------------------------------------------<esc>j0
+"  Center text into a comment line
 nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<cr><esc>
-"  Remove last character on line.
-nnoremap <space>, $x0
 "  Delete current line but leave a blank line there
 nnoremap <space><space> 0d$
-"  Add a blank line above current line
-nnoremap <space>o O<esc>
 "  Copy an entire paragraph
-nnoremap Y m`yip
-" close the buffer, but not the split
-nnoremap <C-c> :bprevious\|bwipeout #<cr>
+nnoremap Y m`"*yip
 
+" Run Fugitive's Git Status
+nnoremap gs :Gstatus<cr>
 
 "  move screen lines with arrow keys
 imap <up> <C-O>gk
@@ -91,15 +91,11 @@ nnoremap <C-l> <C-w>l
 
 "  Cycle through splits and tabs with \ -> save left pinky!
 nnoremap \ <C-w>w
-nnoremap <C-\> :tabnext<cr>
+nnoremap <C-\> :only<cr>
 
-"  Cycle through buffers
-nnoremap <silent>]b :bnext<cr>
-nnoremap <silent>[b :bprevious<cr>
-
-"  Cycle through args list
-nnoremap <C-n> :next<cr>
-nnoremap <C-p> :previous<cr>
+"  Open the Quickfix window
+nnoremap <space>q :copen<cr>
+nnoremap <space>Q :cclose<cr>
 
 """""""""""""""""""""""""
 " SQL specific bindings "
@@ -107,26 +103,35 @@ nnoremap <C-p> :previous<cr>
 
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
 nnoremap <space>sd viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
+
 "  TABLE_NAME -> drop table/create table TABLE_NAME
-nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
+nnoremap <space>st yiWIdrop table <esc>A;<cr>create table <esc>pA nologging as<esc>0k
 
 "  format list of values to -> (a, b, c, etc.)
 nnoremap <space>s( vip:sort un<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
+
 "  format list of values to -> ('a', 'b', 'c', etc.)
 nnoremap <space>s' vip:sort un<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+
+"  get a date range from 'From: <date> 	To: <date>'
+nnoremap <space>sb I  and __date__ between '<esc>ldf Ea' and '<esc>ldf A'<esc>0f_
+
+
+
+
 
 """"""""""""""""""""""""""""""
 " Markdown Specific Bindings "
 """"""""""""""""""""""""""""""
 
 " underline with =
-nnoremap <space>m= yypVr=o<esc>
+nnoremap M= yypVr=o<esc>
 
 " underline with -
-nnoremap <space>m- yypVr-o<esc>
+nnoremap M- yypVr-o<esc>
 
 " Title a journal entry with the date
-nnoremap <space>mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
+nnoremap Mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
 
 
 """""""""""""""""""
@@ -148,7 +153,7 @@ nnoremap <space>mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strf
 let g:syntastic_mode_map = { 'mode':'passive', 'active_filetypes':[], 'passive_filetypes':[] }
 
 " run Syntastic
-nnoremap gs :SyntasticCheck<cr>
+" nnoremap gs :SyntasticCheck<cr>
 
 
 
