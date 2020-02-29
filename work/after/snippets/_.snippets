@@ -57,55 +57,102 @@ snippet odsrecipients
 		PATIENT_NAME
 	;
 
-snippet recipients
-	with PTS as
-	(
-	select
+snippet fullrecipients
+	SELECT DISTINCT
+		transplant_info.summary_block_id
+	, patient.pat_id
+	, patient.pat_name
+	, identity_id.identity_id AS mrn
+	, zc_tx_class.name AS txp_organ
+	, transplant_info.tx_is_historic_yn AS transplanted_elsewhere_yn
+	, patient.birth_date
+	, patient.death_date
+	, CASE
+			WHEN patient.pat_status_c = 1 OR (patient.pat_status_c IS NULL AND patient.death_date IS NULL)
+			THEN 0
+			WHEN patient.pat_status_c = 2 OR (patient.pat_status_c IS NULL AND patient.death_date IS NOT NULL)
+			THEN 1
+		END AS deceased_yn
+	, CAST(COALESCE(pat_enc_hsp.hosp_admsn_time, transplant_info.txp_calc_admit_date) AS DATE) AS index_admission_date
+	, CAST(COALESCE(pat_enc_hsp.hosp_admsn_time, transplant_info.txp_calc_admit_date) AS TIME) AS index_admission_time
+	, transplant_info.tx_surg_dt AS transplant_date
+	, CAST(organ.anastomosis_st_dttm AS DATE) AS anastomosis_date
+	, CAST(organ.anastomosis_st_dttm AS TIME) AS anastomosis_time
+	, CAST(COALESCE(pat_enc_hsp.hosp_disch_time, transplant_info.txp_calc_dischrg_dt) AS DATE) AS index_discharge_date
+	, CAST(COALESCE(pat_enc_hsp.hosp_disch_time, transplant_info.txp_calc_dischrg_dt) AS TIME) AS index_discharge_time
+	, transplant_info.txp_calc_rfl_date            AS referral_date
+	, transplant_info.txp_calc_eval_date           AS eval_start_date
+	, CASE
+			WHEN transplant_info.txp_calc_eval_date IS NOT NULL
+			THEN (
+				CASE
+					WHEN zc_tx_current_stag.name = 'Evaluation' AND zc_tx_stat_out.name = 'Ineligible'
+					THEN transplant_info.tx_current_stage_dt
+					WHEN zc_tx_current_stag.name = 'Evaluation' AND zc_tx_stat_out.name = 'Active'
+					THEN NULL
+					WHEN zc_tx_current_stag.name IN ('Waitlist', 'Transplanted') AND transplant_info.tx_center_wl_dt IS NOT NULL
+					THEN transplant_info.tx_center_wl_dt
+					WHEN zc_tx_current_stag.name = 'Transplanted' AND transplant_info.tx_center_wl_dt IS NULL
+					THEN transplant_info.tx_surg_dt
+					WHEN patient.death_date IS NOT NULL
+					THEN patient.death_date
+				END 
+			)
+			ELSE NULL
+		END AS eval_end_date
+	, transplant_info.tx_center_wl_dt     AS center_waitlist_date
+	, zc_tx_current_stag.name             AS current_phase
+	, transplant_info.tx_current_stage_dt AS current_phase_date
+	, zc_tx_stat_out.name                 AS current_status
+	, zc_tx_current_reas.name             AS current_phase_reason
+	FROM
+		patient
+		INNER JOIN identity_id
+			ON patient.pat_id = identity_id.pat_id
+		INNER JOIN transplant_info
+			ON transplant_info.pat_id = identity_id.pat_id
+		INNER JOIN transplant_class
+			ON transplant_info.summary_block_id = transplant_class.summary_block_id
+		INNER JOIN zc_tx_class
+			ON transplant_class.tx_class_c = zc_tx_class.tx_class_c
+		LEFT JOIN zc_tx_current_stag
+			ON zc_tx_current_stag.tx_current_stag_c = transplant_info.tx_current_stage_c
+		LEFT JOIN zc_tx_current_reas
+			ON zc_tx_current_reas.tx_current_reas_c = transplant_info.tx_current_reason_c
+		LEFT JOIN zc_tx_stat_out
+			ON zc_tx_stat_out.tx_stat_out_c = transplant_info.tx_current_status_c
+		LEFT JOIN transplant_organs
+			ON transplant_organs.summary_block_id = transplant_info.summary_block_id
+		LEFT JOIN organ
+			ON organ.org_record_id = transplant_organs.tx_org_id
+		LEFT JOIN pat_enc_hsp
+			ON pat_enc_hsp.pat_enc_csn_id = transplant_info.txp_admit_csn
+	WHERE transplant_info.episode_status_c <>  3 -- not deleted
+		AND identity_id.identity_type_id = 100     -- HUP
+		AND transplant_info.tx_epsd_type_c = 2     -- Recipient
+		AND (transplant_info.tx_is_historic_yn <> 'Y' OR transplant_info.tx_is_historic_yn IS NULL)
+		AND zc_tx_class.name = '${0:Kidney}'
+
+snippet alltransplants
+	select distinct
 		PATIENT.PAT_ID
 	, PATIENT.PAT_NAME
 	, IDENTITY_ID.IDENTITY_ID as MRN
 	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
 	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, case TRANSPLANT_INFO.TX_EPSD_TYPE_C
+	    when 1
+			then 'Donor'
+			when 2
+			then 'Recipient'
+		end as TRANSPLANT_TYPE
 	, TRANSPLANT_INFO.TX_IS_HISTORIC_YN as TRANSPLANTED_ELSEWHERE_YN
-	, cast(PATIENT.BIRTH_DATE as DATE) as BIRTH_DATE
-	, PATIENT.DEATH_DATE
-	, case
-			when PATIENT.PAT_STATUS_C = 1 or (PATIENT.PAT_STATUS_C is null and PATIENT.DEATH_DATE is null)
-			then 0
-			when PATIENT.PAT_STATUS_C = 2 or (PATIENT.PAT_STATUS_C is null and PATIENT.DEATH_DATE is not null)
-			then 1
-		end as DECEASED_YN
 	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
 			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID)      as EPISODE_SEQUENCE
 	, cast(TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE as date) as INDEX_ADMISSION_DATE
 	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
 	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
 	, cast(TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT as date) as INDEX_DISCHARGE_DATE
-	, cast(TRANSPLANT_INFO.TXP_CALC_RFL_DATE as date)   as REFERRAL_DATE
-	, cast(TRANSPLANT_INFO.TXP_CALC_EVAL_DATE as date)  as EVAL_START_DATE
-	, cast(TRANSPLANT_INFO.TX_WAITLIST_DT as date)      as WAITLIST_DATE
-	, case
-			when TRANSPLANT_INFO.TXP_CALC_EVAL_DATE is not null
-			then (
-				case
-					when ZC_TX_CURRENT_STAG.NAME = 'Evaluation' and ZC_TX_STAT_OUT.NAME = 'Ineligible'
-					then cast(TRANSPLANT_INFO.TX_CURRENT_STAGE_DT as DATE)
-					when ZC_TX_CURRENT_STAG.NAME = 'Evaluation' and ZC_TX_STAT_OUT.NAME = 'Active'
-					then null
-					when ZC_TX_CURRENT_STAG.NAME in ('Waitlist', 'Transplanted') and TRANSPLANT_INFO.TX_WAITLIST_DT is not null
-					then cast(TRANSPLANT_INFO.TX_WAITLIST_DT as DATE)
-					when ZC_TX_CURRENT_STAG.NAME = 'Transplanted' and TRANSPLANT_INFO.TX_WAITLIST_DT is null
-					then cast(TRANSPLANT_INFO.TX_SURG_DT as DATE)
-					when PATIENT.DEATH_DATE is not null
-					then cast(PATIENT.DEATH_DATE as DATE)
-				end 
-			)
-			else null
-		end as EVAL_END_DATE
-	, ZC_TX_CURRENT_STAG.NAME                           as CURRENT_PHASE
-	, cast(TRANSPLANT_INFO.TX_CURRENT_STAGE_DT as DATE) as CURRENT_PHASE_DATE
-	, ZC_TX_STAT_OUT.NAME                               as CURRENT_STATUS
-	, ZC_TX_CURRENT_REAS.NAME                           as CURRENT_PHASE_REASON
 	from
 		PATIENT
 		inner join IDENTITY_ID
@@ -116,12 +163,92 @@ snippet recipients
 			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
 		inner join ZC_TX_CLASS
 			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
-		left join ZC_TX_CURRENT_STAG
-			on ZC_TX_CURRENT_STAG.TX_CURRENT_STAG_C = TRANSPLANT_INFO.TX_CURRENT_STAGE_C
-		left join ZC_TX_CURRENT_REAS
-			on ZC_TX_CURRENT_REAS.TX_CURRENT_REAS_C = TRANSPLANT_INFO.TX_CURRENT_REASON_C
-		left join ZC_TX_STAT_OUT
-			on ZC_TX_STAT_OUT.TX_STAT_OUT_C = TRANSPLANT_INFO.TX_CURRENT_STATUS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and ZC_TX_CLASS.NAME = '${0:Kidney}'
+	order by
+		PATIENT.PAT_NAME
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	;
+
+snippet recipients
+	SELECT DISTINCT
+		patient.pat_id
+	, patient.pat_name
+	, identity_id.identity_id AS mrn
+	, transplant_info.summary_block_id
+	, zc_tx_class.name AS txp_organ
+	, DENSE_RANK() OVER (PARTITION BY identity_id.identity_id ORDER BY transplant_info.summary_block_id) AS episode_sequence
+	, COALESCE(pat_enc_hsp.hosp_admsn_time, transplant_info.txp_calc_admit_date) AS index_admission_dttm
+	, CAST(COALESCE(pat_enc_hsp.hosp_admsn_time, transplant_info.txp_calc_admit_date) AS DATE) AS index_admission_date
+	, CAST(COALESCE(pat_enc_hsp.hosp_admsn_time, transplant_info.txp_calc_admit_date) AS TIME) AS index_admission_time
+	, transplant_info.tx_surg_dt AS transplant_date
+	, organ.anastomosis_st_dttm AS anastomosis_dttm
+	, CAST(organ.anastomosis_st_dttm AS DATE) AS anastomosis_date
+	, CAST(organ.anastomosis_st_dttm AS TIME) AS anastomosis_time
+	, COALESCE(pat_enc_hsp.hosp_disch_time, transplant_info.txp_calc_dischrg_dt) AS index_discharge_dttm
+	, CAST(COALESCE(pat_enc_hsp.hosp_disch_time, transplant_info.txp_calc_dischrg_dt) AS DATE) AS index_discharge_date
+	, CAST(COALESCE(pat_enc_hsp.hosp_disch_time, transplant_info.txp_calc_dischrg_dt) AS TIME) AS index_discharge_time
+	FROM
+		patient
+		INNER JOIN identity_id
+			ON patient.pat_id = identity_id.pat_id
+		INNER JOIN transplant_info
+			ON transplant_info.pat_id = identity_id.pat_id
+		INNER JOIN transplant_class
+			ON transplant_info.summary_block_id = transplant_class.summary_block_id
+		INNER JOIN zc_tx_class
+			ON transplant_class.tx_class_c = zc_tx_class.tx_class_c
+		LEFT JOIN pat_enc_hsp
+			ON pat_enc_hsp.pat_enc_csn_id = transplant_info.txp_admit_csn
+		LEFT JOIN transplant_organs
+			ON transplant_organs.summary_block_id = transplant_info.summary_block_id
+		LEFT JOIN organ
+			ON organ.org_record_id = transplant_organs.tx_org_id
+	WHERE transplant_info.episode_status_c <>  3 -- not deleted
+		AND identity_id.identity_type_id = 100     -- HUP
+		AND transplant_info.tx_epsd_type_c = 2     -- Recipient
+		AND (transplant_info.tx_is_historic_yn <> 'Y' OR transplant_info.tx_is_historic_yn IS NULL)
+		AND zc_tx_class.name = '${0:Kidney}'
+	ORDER BY
+		patient.pat_name
+	, transplant_info.summary_block_id
+	;
+
+snippet donors
+	select distinct
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
+	, coalesce(PAT_ENC_HSP.HOSP_ADMSN_TIME, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE) as INDEX_ADMISSION_DTTM
+	, cast(coalesce(PAT_ENC_HSP.HOSP_ADMSN_TIME, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE) as date) as INDEX_ADMISSION_DATE
+	, cast(coalesce(PAT_ENC_HSP.HOSP_ADMSN_TIME, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE) as time) as INDEX_ADMISSION_TIME
+	, TRANSPLANT_INFO.TX_SURG_DT as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM as ANASTOMOSIS_DTTM
+	, cast(ORGAN.ANASTOMOSIS_ST_DTTM as date) as ANASTOMOSIS_DATE
+	, cast(ORGAN.ANASTOMOSIS_ST_DTTM as time) as ANASTOMOSIS_TIME
+	, coalesce(PAT_ENC_HSP.HOSP_DISCH_TIME, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT) as INDEX_DISCHARGE_DTTM
+	, cast(coalesce(PAT_ENC_HSP.HOSP_DISCH_TIME, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT) as date) as INDEX_DISCHARGE_DATE
+	, cast(coalesce(PAT_ENC_HSP.HOSP_DISCH_TIME, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT) as time) as INDEX_DISCHARGE_TIME
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = TRANSPLANT_INFO.TXP_ADMIT_CSN
 		left join TRANSPLANT_ORGANS
 			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
 		left join ORGAN
@@ -129,130 +256,29 @@ snippet recipients
 	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
 		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
 		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
-		and ZC_TX_CLASS.NAME = 'Kidney'
-	)
-	select distinct
-		SUMMARY_BLOCK_ID
-	, TXP_ORGAN
-	, PAT_ID
-	, PAT_NAME
-	, MRN
-	, BIRTH_DATE
-	, DEATH_DATE
-	, DECEASED_YN
-	, EPISODE_SEQUENCE
-	, TRANSPLANT_DATE
-	, ANASTOMOSIS_TIME
-	, REFERRAL_DATE
-	, EVAL_START_DATE
-	, EVAL_END_DATE
-	, WAITLIST_DATE
-	, CURRENT_PHASE
-	, CURRENT_PHASE_DATE
-	, CURRENT_STATUS
-	, CURRENT_PHASE_REASON
-	from
-		PTS
+		and (TRANSPLANT_INFO.TX_IS_HISTORIC_YN <> 'Y' or TRANSPLANT_INFO.TX_IS_HISTORIC_YN is null)
+		and ZC_TX_CLASS.NAME = '${0:Kidney}'
 	order by
-		PAT_NAME
-	, EPISODE_SEQUENCE
-	;
-
-snippet donors
-	with PTS as
-	(
-	select
-		PATIENT.PAT_ID
-	, PATIENT.PAT_NAME
-	, IDENTITY_ID.IDENTITY_ID as MRN
+		PATIENT.PAT_NAME
 	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
-	, ZC_TX_CLASS.NAME as TXP_ORGAN
-	, TRANSPLANT_INFO.TX_IS_HISTORIC_YN as TRANSPLANTED_ELSEWHERE_YN
-	, PATIENT.BIRTH_DATE
-	, PATIENT.DEATH_DATE
-	, case
-			when PATIENT.PAT_STATUS_C = 1 or (PATIENT.PAT_STATUS_C is null and PATIENT.DEATH_DATE is null)
-			then 0
-			when PATIENT.PAT_STATUS_C = 2 or (PATIENT.PAT_STATUS_C is null and PATIENT.DEATH_DATE is not null)
-			then 1
-		end as DECEASED_YN
-	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
-			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
-	, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE          as INDEX_ADMISSION_DATE
-	, TRANSPLANT_INFO.TX_SURG_DT                   as DONATION_DATE
-	, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT          as INDEX_DISCHARGE_DATE
-	, TRANSPLANT_INFO.TXP_CALC_RFL_DATE            as REFERRAL_DATE
-	, TRANSPLANT_INFO.TXP_CALC_EVAL_DATE           as EVAL_START_DATE
-	, TRANSPLANT_INFO.TXP_CALC_EVAL_END_DT         as EVAL_END_DATE
-	, TRANSPLANT_INFO.TX_WAITLIST_DT               as WAITLIST_DATE
-	, ZC_TX_CURRENT_STAG.NAME                      as CURRENT_PHASE
-	, TRANSPLANT_INFO.TX_CURRENT_STAGE_DT          as CURRENT_PHASE_DATE
-	, ZC_TX_STAT_OUT.NAME                          as CURRENT_STATUS
-	, ZC_TX_CURRENT_REAS.NAME                      as CURRENT_PHASE_REASON
-	from
-		PATIENT
-		inner join IDENTITY_ID
-			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
-		inner join TRANSPLANT_INFO
-			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
-		inner join TRANSPLANT_CLASS
-			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
-		inner join ZC_TX_CLASS
-			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
-		left join ZC_TX_CURRENT_STAG
-			on ZC_TX_CURRENT_STAG.TX_CURRENT_STAG_C = TRANSPLANT_INFO.TX_CURRENT_STAGE_C
-		left join ZC_TX_CURRENT_REAS
-			on ZC_TX_CURRENT_REAS.TX_CURRENT_REAS_C = TRANSPLANT_INFO.TX_CURRENT_REASON_C
-		left join ZC_TX_STAT_OUT
-			on ZC_TX_STAT_OUT.TX_STAT_OUT_C = TRANSPLANT_INFO.TX_CURRENT_STATUS_C
-	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
-		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
-		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 1     -- Donor
-		and ZC_TX_CLASS.NAME = 'Kidney'
-	)
-	select distinct
-	  SUMMARY_BLOCK_ID
-	, TXP_ORGAN
-	, PAT_ID
-	, PAT_NAME
-	, MRN
-	, BIRTH_DATE
-	, DEATH_DATE
-	, DECEASED_YN
-	, EPISODE_SEQUENCE
-	, INDEX_ADMISSION_DATE
-	, DONATION_DATE
-	, INDEX_DISCHARGE_DATE
-	, REFERRAL_DATE
-	, EVAL_START_DATE
-	, EVAL_END_DATE
-	, WAITLIST_DATE
-	, CURRENT_PHASE
-	, CURRENT_PHASE_DATE
-	, CURRENT_STATUS
-	, CURRENT_PHASE_REASON
-	from
-		PTS
-	order by
-		PAT_NAME
-	, EPISODE_SEQUENCE
 	;
 
 snippet dxods
 	select
-		OP.MDM_PATIENT_ID,
-		MP.EMPI,
-		MP.HUP_MRN,
-		MP.PMC_MRN,
-		MP.PAH_MRN,
-		MP.PATIENT_LNAME,
-		MP.PATIENT_FNAME,
-		E.VISIT_NUMBER_NUM,
-		E.ENC_DATE,
-		E.ENC_DISCHARGE_DATE,
-		D.CODING_DATE,
-		C.CODE,
-		C.DESCRIPTION
+	  OP.MDM_PATIENT_ID
+	, MP.EMPI
+	, MP.HUP_MRN
+	, MP.PMC_MRN
+	, MP.PAH_MRN
+	, MP.PATIENT_LNAME
+	, MP.PATIENT_FNAME
+	, E.VISIT_NUMBER_NUM
+	, E.ENC_DATE
+	, E.ENC_DISCHARGE_DATE
+	, D.CODING_DATE
+	, C.CODE_STANDARD_NAME
+	, C.CODE
+	, C.DESCRIPTION
 	from
 		MDM.PATIENT MP
 		inner join ODS.PATIENT OP
@@ -260,13 +286,13 @@ snippet dxods
 			and OP.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
 		inner join ODS.ENCOUNTER E
 			on OP.PK_PATIENT_ID = E.FK_PATIENT_ID
-			and E.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
+			and E.SOURCE_CODE = OP.SOURCE_CODE
 		inner join ODS.DIAGNOSIS D
 			on E.PK_ENCOUNTER_ID = D.FK_ENCOUNTER_ID
-			and D.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
+			and D.SOURCE_CODE = OP.SOURCE_CODE
 		inner join ODS.R_CODES_DIAGNOSIS C
 			on C.PK_DX_CODE_ID = D.FK_DX_CODE_ID
-			and C.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
+			and C.SOURCE_CODE = OP.SOURCE_CODE
 	where C.CODE IN (${0:CODES})
 	;
 
@@ -320,7 +346,7 @@ snippet dxepicfinal
 	select 
 	  PAT_ENC_HSP.HOSP_ADMSN_TIME
 	, PAT_ENC_HSP.HOSP_DISCH_TIME
-	, HSP_ACCT_DX_LIST.LINE
+	, HSP_ACCT_DX_LIST.LINE -- Principal final diagnosis = 1
 	, EDG_CURRENT_ICD10.CODE
 	, CLARITY_EDG.DX_NAME
 	from 
@@ -342,6 +368,7 @@ snippet problemlist
 	, PAT_ENC_HOSP_PROB.LINE
 	, EDG_CURRENT_ICD10.CODE
 	, CLARITY_EDG.DX_NAME
+	, PAT_ENC_HOSP_PROB.PRINCIPAL_PROB_YN
 	from PAT_ENC_HSP
 		inner join PAT_ENC_HOSP_PROB
 		  ON PAT_ENC_HSP.PAT_ENC_CSN_ID = PAT_ENC_HOSP_PROB.PAT_ENC_CSN_ID
@@ -356,19 +383,19 @@ snippet problemlist
 
 snippet procods
 	select
-		OP.MDM_PATIENT_ID,
-		MP.EMPI,
-		MP.HUP_MRN,
-		MP.PMC_MRN,
-		MP.PAH_MRN,
-		MP.PATIENT_LNAME,
-		MP.PATIENT_FNAME,
-		E.VISIT_NUMBER_NUM,
-		E.ENC_DATE,
-		E.ENC_DISCHARGE_DATE,
-		P.PROC_DATE,
-		C.CODE,
-		C.DESCRIPTION
+	  OP.MDM_PATIENT_ID
+	, MP.EMPI
+	, MP.HUP_MRN
+	, MP.PMC_MRN
+	, MP.PAH_MRN
+	, MP.PATIENT_LNAME
+	, MP.PATIENT_FNAME
+	, E.VISIT_NUMBER_NUM
+	, E.ENC_DATE
+	, E.ENC_DISCHARGE_DATE
+	, P.PROC_DATE
+	, C.CODE
+	, C.DESCRIPTION
 	from
 		MDM.PATIENT MP
 		inner join ODS.PATIENT OP
@@ -376,13 +403,13 @@ snippet procods
 			and OP.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
 		inner join ODS.ENCOUNTER E
 			on OP.PK_PATIENT_ID = E.FK_PATIENT_ID
-			and E.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
+			and E.SOURCE_CODE = OP.SOURCE_CODE
 		inner join ODS.PROCEDURES P
 		  on E.PK_ENCOUNTER_ID = P.FK_ENCOUNTER_ID
-			and P.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
+			and P.SOURCE_CODE = OP.SOURCE_CODE
 		inner join ODS.R_CODES_PROCEDURES C
 		  on C.PK_PROC_CODE_ID = P.FK_PROC_CODE_ID
-			and C.SOURCE_CODE in ('HDMHUP','HDMPMC','CLINTRAC','EPIC') 
+			and C.SOURCE_CODE = OP.SOURCE_CODE
 	where C.CODE IN (${0:CODES})
 	;
 
@@ -584,7 +611,7 @@ snippet labsods
 	from
 		${0:__table__} PTS
 		inner join MDM.PATIENT MP
-			on MP.HUP_MRN = PTS.MRN
+			on MP.PK_PATIENT_ID = PTS.MDM_PATIENT_ID
 		inner join ODS.PATIENT OP
 			on OP.MDM_PATIENT_ID = MP.PK_PATIENT_ID
 	),
@@ -675,6 +702,7 @@ snippet labsods
 	, ENC.ENC_DATE
 	, ENC.ENC_DISCHARGE_DATE
 	, O.ORDER_DATE
+	, O.SPECIMEN_RECEIVED_DATE as COLLECTED_TIME
 	, O.ORDER_NAME
 	, OI.PK_ORDER_ITEM_ID
 	, OI.ORDER_ITEM_CODE
@@ -704,42 +732,50 @@ snippet labsods
 	;
 
 snippet labsepic
-	with PTS as
-	(
-	select
-		SUMMARY_BLOCK_ID
-	, TXP_ORGAN
-	, PAT_ID
-	, PAT_NAME
-	, MRN
-	, TRANSPLANT_DATE
-	from
-		__table__
-	)
-	select
-		PTS.TXP_ORGAN
-	, PTS.MRN
-	, PTS.PAT_NAME
-	, PTS.TRANSPLANT_DATE
-	, CLARITY_COMPONENT.NAME
-	, CLARITY_COMPONENT.BASE_NAME
+	select distinct
+		TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ORDER_PROC.ORDER_PROC_ID
+	, CLARITY_EAP.PROC_ID
+	, CLARITY_EAP.PROC_CODE
+	, CLARITY_EAP.PROC_NAME
+	, CLARITY_COMPONENT.COMPONENT_ID
+	, CLARITY_COMPONENT.NAME as COMPONENT_NAME
+	, CLARITY_COMPONENT.EXTERNAL_NAME
 	, CLARITY_COMPONENT.COMMON_NAME
-	, CLARITY_COMPONENT.LOINC_CODE
-	, ORDER_PROC.ORDER_TIME
-	, ORDER_PROC.RESULT_TIME
+	, ORDER_PROC.ORDER_TIME as ORDER_DTTM
+	, cast(ORDER_PROC.ORDER_TIME as date) as ORDER_DATE
+	, cast(ORDER_PROC.ORDER_TIME as time) as ORDER_TIME
+	, case
+			when ORDER_PROC_2.SPECIMN_TAKEN_TIME is not null
+			then ORDER_PROC_2.SPECIMN_TAKEN_TIME
+			when ORDER_PROC_2.SPECIMN_TAKEN_DATE is not null
+			then ORDER_PROC_2.SPECIMN_TAKEN_DATE
+			else ORDER_PROC.ORDER_TIME
+		end as COLLECTION_DTTM
+	, cast(ORDER_PROC_2.SPECIMN_TAKEN_TIME as date) as COLLECTION_DATE
+	, cast(ORDER_PROC_2.SPECIMN_TAKEN_TIME as time) as COLLECTION_TIME
+	, ORDER_RESULTS.RESULT_TIME as RESULT_DTTM
+	, cast(ORDER_RESULTS.RESULT_TIME as date) as RESULT_DATE
+	, cast(ORDER_RESULTS.RESULT_TIME as time) as RESULT_TIME
 	, ORDER_RESULTS.ORD_VALUE
-	, ORDER_RESULTS.REFERENCE_UNIT
 	, ORDER_RESULTS.ORD_NUM_VALUE
+	, dense_rank() over (partition by TRANSPLANT_INFO.SUMMARY_BLOCK_ID order by ORDER_PROC_2.SPECIMN_TAKEN_TIME asc, ORDER_PROC.ORDER_TIME asc, ORDER_RESULTS.RESULT_TIME asc) as SORT
 	from
-		PTS
+		TRANSPLANT_INFO
 		inner join ORDER_PROC
-			on ORDER_PROC.PAT_ID = PTS.PAT_ID
+			on ORDER_PROC.PAT_ID = TRANSPLANT_INFO.PAT_ID
+		inner join CLARITY_EAP
+			on CLARITY_EAP.PROC_ID = ORDER_PROC.PROC_ID
 		inner join ORDER_RESULTS
 			on ORDER_RESULTS.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
 		inner join CLARITY_COMPONENT
 			on CLARITY_COMPONENT.COMPONENT_ID = ORDER_RESULTS.COMPONENT_ID
-	;
-
+		left join ORDER_PROC_2
+			on ORDER_PROC_2.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
+	where 1=1
+		and CLARITY_EAP.PROC_ID = __procedure__
+		and CLARITY_COMPONENT.COMPONENT_ID = __component__
+		and CLARITY_EAP.PROC_CODE = __code__
 
 snippet patholepic
 	with PTS as
@@ -874,23 +910,6 @@ snippet surgepic
 		and OR_LOG.SURGERY_DATE between '12/01/2016 00:00:00' and '01/01/2017 00:00:00'
 	;
 
-snippet surgeon
-	with PTS as
-	(
-	select
-		SUMMARY_BLOCK_ID
-	, TXP_ORGAN
-	, PAT_ID
-	, PAT_NAME
-	, MRN
-	, TRANSPLANT_DATE
-	from
-		__table__
-	)
-	select
-		PTS.PAT_NAME
-	, PTS.MRN
-
 snippet pcp
 	with RECIPIENTS as
 	(
@@ -914,7 +933,7 @@ snippet pcp
 	, TRANSPLANT_INFO.TXP_CALC_RFL_DATE            as REFERRAL_DATE
 	, TRANSPLANT_INFO.TXP_CALC_EVAL_DATE           as EVAL_START_DATE
 	, TRANSPLANT_INFO.TXP_CALC_EVAL_END_DT         as EVAL_END_DATE
-	, TRANSPLANT_INFO.TX_WAITLIST_DT               as WAITLIST_DATE
+	, TRANSPLANT_INFO.TX_CENTER_WL_DT               as WAITLIST_DATE
 	, ZC_TX_CURRENT_STAG.NAME                      as CURRENT_PHASE
 	, TRANSPLANT_INFO.TX_CURRENT_STAGE_DT          as CURRENT_PHASE_DATE
 	, ZC_TX_STAT_OUT.NAME                          as CURRENT_STATUS
@@ -960,7 +979,11 @@ snippet pcp
 	;
 
 snippet drop
-	if object_id('tempdb..${0:#_table_}') is not null begin drop table #_table_ end;
+	IF
+	  OBJECT_ID('TEMPDB..${1:#_table_}') IS NOT NULL
+	BEGIN
+	  DROP TABLE $1
+	END;
 
 snippet compare
 	select distinct
@@ -1004,6 +1027,36 @@ snippet medepic
 		and (ORDER_MED.ORDER_STATUS_C is null or ORDER_MED.ORDER_STATUS_C <> 4) --filter out canceled orders
 	;
 
+snippet medcsn
+	CSN as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, F_AN_RECORD_SUMMARY.AN_52_ENC_CSN_ID as CSN
+	from
+		PTS
+		inner join PAT_OR_ADM_LINK
+			on PAT_OR_ADM_LINK.OR_LINK_CSN = PTS.TXP_ADMIT_CSN
+		inner join F_AN_RECORD_SUMMARY
+			on F_AN_RECORD_SUMMARY.AN_LOG_ID = PAT_OR_ADM_LINK.LOG_ID
+	union
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, PAT_OR_ADM_LINK.OR_LINK_CSN as CSN
+	from
+		PTS
+		inner join PAT_OR_ADM_LINK
+			on PAT_OR_ADM_LINK.OR_LINK_CSN = PTS.TXP_ADMIT_CSN
+	union
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, PAT_OR_ADM_LINK.PAT_ENC_CSN_ID as CSN
+	from
+		PTS
+		inner join PAT_OR_ADM_LINK
+			on PAT_OR_ADM_LINK.OR_LINK_CSN = PTS.TXP_ADMIT_CSN
+	)
+
 snippet organfailure
 	with PTS as
 	(
@@ -1015,9 +1068,6 @@ snippet organfailure
 	, ZC_TX_CLASS.NAME as TXP_ORGAN
 	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
 			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
-	, ZC_TX_CURRENT_STAG.NAME                      as CURRENT_PHASE
-	, TRANSPLANT_INFO.TX_CURRENT_STAGE_DT          as CURRENT_PHASE_DATE
-	, ZC_TX_STAT_OUT.NAME                          as CURRENT_STATUS
 	, TRANSPLANT_CLASS.TX_CLASS_C
 	from
 		PATIENT
@@ -1040,14 +1090,11 @@ snippet organfailure
 	select distinct
 		PTS.PAT_NAME
 	, PTS.MRN
-	, PTS.PAT_ID
 	, PTS.SUMMARY_BLOCK_ID
 	, PTS.EPISODE_SEQUENCE
-	, PTS.CURRENT_PHASE_DATE
-	, PTS.CURRENT_PHASE
-	, PTS.CURRENT_STATUS
 	, PTS.TXP_ORGAN
-	, ZC_NATV_PRIM_FAIL.NAME as FAILURE_REASON
+	, PRIMARY_DX.NAME as PRIMARY_DIAGNOSIS
+	, SECONDARY_DX.NAME as SECONDARY_DIAGNOSIS
 	from
 		PTS
 		left join PAT_NATIVE_ORG
@@ -1055,15 +1102,19 @@ snippet organfailure
 		left join ORGAN
 			on ORGAN.ORG_RECORD_ID = PAT_NATIVE_ORG.ORG_RECORD_ID
 			and PTS.TX_CLASS_C = ORGAN.ORGAN_CLASS_C
-		left join ZC_NATV_PRIM_FAIL
-			on ZC_NATV_PRIM_FAIL.NAT_PRIMARY_FAIL_C = ORGAN.NAT_PRIMARY_FAIL_C
+		left join ZC_NATV_PRIM_FAIL PRIMARY_DX
+			on PRIMARY_DX.NAT_PRIMARY_FAIL_C = ORGAN.NAT_PRIMARY_FAIL_C
+		left join ORGAN_NAT_SEC_FAIL
+			on ORGAN_NAT_SEC_FAIL.ORG_RECORD_ID = ORGAN.ORG_RECORD_ID
+		left join ZC_NATV_PRIM_FAIL SECONDARY_DX
+			on SECONDARY_DX.NAT_PRIMARY_FAIL_C = ORGAN_NAT_SEC_FAIL.NAT_SEC_FAIL_C
 	;
 
 snippet header
 	/*
 	 * Requester:   ${0:NAME}
-	 * Title:       
 	 * Ticket:      
+	 * Title:       
 	 *
 	 * Author:      Peter Martinson
 	 * Open Date:   
@@ -1075,6 +1126,7 @@ snippet header
 
 
 	/*============================================================================*/
+	---
 
 snippet crystal
 	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
@@ -1091,7 +1143,7 @@ snippet crystal
 	Frequency: Monthly
 	Number of Records: 
 	Runtime: 
-	Shared Drive Location: I:\Athena\Report Requests\martinson\
+	Shared Drive Location: I:\Athena\Report Requests\martinson\01 - Transplant Quality Tickets\
 	BOE Location: \PennChart\Transplant\
 	*/
 
@@ -1111,6 +1163,1656 @@ snippet crysthist
 	Frequency: Monthly
 	Number of Records: 
 	Runtime: 
-	Shared Drive Location: I:\Athena\Report Requests\martinson\
+	Shared Drive Location: I:\Athena\Report Requests\martinson\01 - Transplant Quality Tickets\
 	BOE Location: \PennChart\Transplant\
 	*/
+
+snippet multiorgan
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
+	, TXP_ORGAN_DONOR.DONOR_UNOS_ID
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+		left join TXP_DONOR_ORGANS
+			on TXP_DONOR_ORGANS.DNR_ORGAN_ID = ORGAN.ORG_RECORD_ID
+		left join TXP_ORGAN_DONOR
+			on TXP_ORGAN_DONOR.DONOR_ID = TXP_DONOR_ORGANS.DONOR_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME = '${1:__Target_Organ__}'
+	),
+	MULTIORGANS as
+	(
+	select
+		PTS.PAT_ID
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, ORGAN.ANASTOMOSIS_ST_DTTM                    as ANASTOMOSIS_TIME
+	, TXP_ORGAN_DONOR.DONOR_UNOS_ID
+	from
+		PTS
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = PTS.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		inner join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		inner join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+			and TRANSPLANT_CLASS.TX_CLASS_C = ORGAN.ORGAN_CLASS_C
+		inner join TXP_DONOR_ORGANS
+			on TXP_DONOR_ORGANS.DNR_ORGAN_ID = ORGAN.ORG_RECORD_ID
+		inner join TXP_ORGAN_DONOR
+			on TXP_ORGAN_DONOR.DONOR_ID = TXP_DONOR_ORGANS.DONOR_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2 -- Recipient
+		and TXP_ORGAN_DONOR.DONOR_UNOS_ID = PTS.DONOR_UNOS_ID
+		and ZC_TX_CLASS.NAME <> PTS.TXP_ORGAN
+	)
+	select
+		PTS.PAT_NAME
+	, PTS.MRN
+	, PTS.TRANSPLANT_DATE
+	, PTS.TXP_ORGAN                as TARGET_ORGAN
+	, PTS.SUMMARY_BLOCK_ID         as TARGET_EPISODE_ID
+	, PTS.ANASTOMOSIS_TIME         as TARGET_ANASTOMOSIS_TIME
+	, MULTIORGANS.SUMMARY_BLOCK_ID as OTHER_EPISODE_ID
+	, MULTIORGANS.TXP_ORGAN        as OTHER_ORGAN
+	, MULTIORGANS.ANASTOMOSIS_TIME as OTHER_ANASTOMOSIS_TIME
+	from
+		PTS
+		left join MULTIORGANS
+			on MULTIORGANS.DONOR_UNOS_ID = PTS.DONOR_UNOS_ID
+	;
+
+snippet donortype
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and TRANSPLANT_INFO.TX_SURG_DT is not null  -- Transplant completed
+		and ZC_TX_CLASS.NAME in ('Kidney','Liver')
+	),
+	LIVING_DONOR as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, ZC_TX_ORG_SRC.NAME as LIVING_DONOR_TYPE
+	from
+		PTS
+		inner join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		inner join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+		left join ZC_TX_ORG_SRC
+			on ZC_TX_ORG_SRC.TX_ORG_SRC_C = ORGAN.TX_ORG_SRC_C
+		left join ZC_ORG_DONATION_CR
+			on ZC_ORG_DONATION_CR.ORG_DONATION_CR_C = ORGAN.ORG_DONATION_CRIT_C
+	),
+	DECEASED_DONOR as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, ZC_TX_ORG_SRC.NAME as DECEASED_DONOR_TYPE
+	from
+		PTS
+		inner join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		inner join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+		inner join TXP_DONOR_ORGANS
+			on TXP_DONOR_ORGANS.DNR_ORGAN_ID = ORGAN.ORG_RECORD_ID
+		inner join TXP_ORGAN_DONOR
+			on TXP_ORGAN_DONOR.DONOR_ID = TXP_DONOR_ORGANS.DONOR_ID
+		left join ZC_TX_ORG_SRC
+			on ZC_TX_ORG_SRC.TX_ORG_SRC_C = TXP_ORGAN_DONOR.DONOR_TYPE_C
+	)
+	select distinct
+		PTS.PAT_NAME
+	, PTS.PAT_ID
+	, PTS.MRN
+	, PTS.SUMMARY_BLOCK_ID
+	, PTS.TXP_ORGAN
+	, PTS.TRANSPLANT_DATE
+	, PTS.ANASTOMOSIS_TIME
+	, case
+			when LIVING_DONOR.LIVING_DONOR_TYPE = 'Living'
+			then 'LIVING'
+			when DECEASED_DONOR.DECEASED_DONOR_TYPE = 'Living'
+			then 'LIVING'
+			when DECEASED_DONOR.DECEASED_DONOR_TYPE is not null
+			then 'DECEASED'
+			else 'UNKNOWN'
+		end as DONOR_TYPE
+	from
+		PTS
+		left join LIVING_DONOR
+			on LIVING_DONOR.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		left join DECEASED_DONOR
+			on DECEASED_DONOR.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+	;
+
+snippet har
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and TRANSPLANT_INFO.TX_SURG_DT is not null  -- Transplant completed
+		and ZC_TX_CLASS.NAME in ('Kidney','Liver')
+	),
+	HAR as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, PAT_ENC_HSP.HSP_ACCOUNT_ID as HAR_NUMBER
+	from
+		PTS
+		inner join TRANSPLANT_OR_LOGS
+			on TRANSPLANT_OR_LOGS.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		inner join OR_LOG
+			on OR_LOG.LOG_ID = TRANSPLANT_OR_LOGS.TXP_SURG_LOG_ID
+			and OR_LOG.PROC_NOT_PERF_C is null -- Anything here means "Cancelled"
+		inner join PAT_OR_ADM_LINK
+			on PAT_OR_ADM_LINK.LOG_ID = OR_LOG.LOG_ID
+		inner join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = PAT_OR_ADM_LINK.OR_LINK_CSN
+	)
+	select distinct
+		PTS.PAT_NAME
+	, PTS.PAT_ID
+	, PTS.MRN
+	, PTS.SUMMARY_BLOCK_ID
+	, PTS.TXP_ORGAN
+	, PTS.TRANSPLANT_DATE
+	, PTS.ANASTOMOSIS_TIME
+	, HAR.HAR_NUMBER
+	from
+		PTS
+		left join HAR
+			on HAR.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+	;
+
+snippet epictopds
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, cast(PATIENT.BIRTH_DATE as DATE) as BIRTH_DATE
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
+			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID)      as EPISODE_SEQUENCE
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join ZC_TX_CURRENT_STAG
+			on ZC_TX_CURRENT_STAG.TX_CURRENT_STAG_C = TRANSPLANT_INFO.TX_CURRENT_STAGE_C
+		left join ZC_TX_CURRENT_REAS
+			on ZC_TX_CURRENT_REAS.TX_CURRENT_REAS_C = TRANSPLANT_INFO.TX_CURRENT_REASON_C
+		left join ZC_TX_STAT_OUT
+			on ZC_TX_STAT_OUT.TX_STAT_OUT_C = TRANSPLANT_INFO.TX_CURRENT_STATUS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME in ('Kidney','Liver','Heart','Lung','Pancreas')
+	)
+	select distinct
+		SUMMARY_BLOCK_ID
+	, TXP_ORGAN
+	, PAT_ID
+	, PAT_NAME
+	, MRN
+	, BIRTH_DATE
+	, EPISODE_SEQUENCE
+	, TRANSPLANT_DATE
+	, ANASTOMOSIS_TIME
+	from
+		PTS
+	;
+
+	-- Import the above as PJM_PHOENIX_INFO
+	-- Run the following in PDS
+	select distinct
+		PHX.SUMMARY_BLOCK_ID
+	, PHX.TXP_ORGAN
+	, PHX.PAT_ID
+	, PHX.PAT_NAME
+	, PHX.MRN
+	, PHX.BIRTH_DATE
+	, PHX.EPISODE_SEQUENCE
+	, PHX.TRANSPLANT_DATE
+	, PHX.ANASTOMOSIS_TIME
+	, OP.MDM_PATIENT_ID
+	, MP.PATIENT_LNAME
+	, MP.PATIENT_FNAME
+	, MP.HUP_MRN
+	from
+		REPORTS_ADMIN.PJM_PHOENIX_INFO PHX
+		inner join ODS.PATIENT_IDENTIFIERS PI
+			on PI.PATIENT_IDENTIFIER_NUM = PHX.MRN
+		inner join ODS.PATIENT OP
+			on OP.PK_PATIENT_ID = PI.FK_PATIENT_ID
+		inner join MDM.PATIENT MP
+			on MP.PK_PATIENT_ID = OP.MDM_PATIENT_ID
+			and extract(year from MP.BIRTH_DATE) = extract(year from PHX.BIRTH_DATE)
+	;
+
+	-- Comparison
+	select distinct
+	  PHX.MRN
+	, PHX.PAT_NAME
+	, PTS.PATIENT_LNAME
+	, PTS.PATIENT_FNAME
+	, PTS.MDM_PATIENT_ID
+	, case
+			when substr(PHX.PAT_NAME, 1, instr(PHX.PAT_NAME, ',')-1)  <> PTS.PATIENT_LNAME
+			then 1
+			else 0
+		end as MATCH
+	from
+		PJM_PHOENIX_INFO PHX
+		left join __NewTable__ PTS
+			on PTS.MRN = PHX.MRN
+	order by 2, 3, 4
+	;
+
+snippet pennready
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
+			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
+	, TRANSPLANT_INFO.TX_SURG_DT as TRANSPLANT_DATE
+	, cast(TRANSPLANT_INFO.TXP_CALC_EVAL_DATE as date)  as EVAL_START_DATE
+	, cast(TRANSPLANT_INFO.TX_CENTER_WL_DT as date)      as WAITLIST_DATE
+	, case
+			when TRANSPLANT_INFO.TXP_CALC_EVAL_DATE is not null
+			then (
+				case
+					when ZC_TX_CURRENT_STAG.NAME = 'Evaluation' and ZC_TX_STAT_OUT.NAME = 'Ineligible'
+					then cast(TRANSPLANT_INFO.TX_CURRENT_STAGE_DT as DATE)
+					when ZC_TX_CURRENT_STAG.NAME = 'Evaluation' and ZC_TX_STAT_OUT.NAME = 'Active'
+					then null
+					when ZC_TX_CURRENT_STAG.NAME in ('Waitlist', 'Transplanted') and TRANSPLANT_INFO.TX_CENTER_WL_DT is not null
+					then cast(TRANSPLANT_INFO.TX_CENTER_WL_DT as DATE)
+					when ZC_TX_CURRENT_STAG.NAME = 'Transplanted' and TRANSPLANT_INFO.TX_CENTER_WL_DT is null
+					then cast(TRANSPLANT_INFO.TX_SURG_DT as DATE)
+					when PATIENT.DEATH_DATE is not null
+					then cast(PATIENT.DEATH_DATE as DATE)
+				end 
+			)
+			else null
+		end as EVAL_END_DATE
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join ZC_TX_CURRENT_STAG
+			on ZC_TX_CURRENT_STAG.TX_CURRENT_STAG_C = TRANSPLANT_INFO.TX_CURRENT_STAGE_C
+		left join ZC_TX_STAT_OUT
+			on ZC_TX_STAT_OUT.TX_STAT_OUT_C = TRANSPLANT_INFO.TX_CURRENT_STATUS_C
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME = 'Liver'
+	),
+	PENN_READY as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, TRANSPLANT_STAT_HX.TX_STAT_DT as PENN_READY_START_DATE
+	from
+		PTS
+		inner join TRANSPLANT_STAT_HX
+			on TRANSPLANT_STAT_HX.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CURRENT_REAS
+			on ZC_TX_CURRENT_REAS.TX_CURRENT_REAS_C = TRANSPLANT_STAT_HX.TX_STATUS_REASON_C
+	where ZC_TX_CURRENT_REAS.NAME = 'Penn Ready'
+	)
+	select
+		PTS.PAT_ID
+	, PTS.PAT_NAME
+	, PTS.MRN
+	, PTS.SUMMARY_BLOCK_ID
+	, PTS.TXP_ORGAN
+	, PTS.EPISODE_SEQUENCE
+	, PTS.EVAL_START_DATE
+	, PTS.EVAL_END_DATE
+	, PTS.WAITLIST_DATE
+	, PTS.TRANSPLANT_DATE
+	, PENN_READY.PENN_READY_START_DATE
+	from
+		PTS
+		left join PENN_READY
+			on PENN_READY.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+	;
+
+snippet linkdonor
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
+	, ORGAN.TX_DNR_ID
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join ZC_TX_CURRENT_STAG
+			on ZC_TX_CURRENT_STAG.TX_CURRENT_STAG_C = TRANSPLANT_INFO.TX_CURRENT_STAGE_C
+		left join ZC_TX_CURRENT_REAS
+			on ZC_TX_CURRENT_REAS.TX_CURRENT_REAS_C = TRANSPLANT_INFO.TX_CURRENT_REASON_C
+		left join ZC_TX_STAT_OUT
+			on ZC_TX_STAT_OUT.TX_STAT_OUT_C = TRANSPLANT_INFO.TX_CURRENT_STATUS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME = '${0:RECIPIENT ORGAN}'
+	),
+	DONOR as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, PATIENT.BIRTH_DATE
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	from
+		PTS
+		inner join PATIENT
+			on PATIENT.PAT_ID = PTS.TX_DNR_ID
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+			and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+	)
+	select distinct
+		PTS.SUMMARY_BLOCK_ID
+	, PTS.TXP_ORGAN
+	, PTS.PAT_ID
+	, PTS.PAT_NAME
+	, PTS.MRN
+	, PTS.TRANSPLANT_DATE
+	, PTS.ANASTOMOSIS_TIME
+	, DONOR.PAT_ID     as DONOR_PAT_ID
+	, DONOR.PAT_NAME   as DONOR_NAME
+	, DONOR.MRN        as DONOR_MRN
+	, DONOR.BIRTH_DATE as DONOR_DOB
+	from
+		PTS
+		left join DONOR
+			on DONOR.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+	order by
+		PTS.PAT_NAME
+	, PTS.TRANSPLANT_DATE
+	;
+
+snippet protocol
+	with PTS as
+	(
+	select
+		TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, PATIENT.PAT_ID
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 1     -- Donor
+		and ZC_TX_CLASS.NAME in ('Kidney','Liver')
+		and TRANSPLANT_INFO.TX_SURG_DT is not null
+	)
+	select
+		PTS.PAT_ID
+	, ZC_TX_PROTOCOLS.NAME as PROTOCOL
+	from
+		PTS
+		inner join EPISODE_ALL
+			on EPISODE_ALL.PAT_ID = PTS.PAT_ID
+		inner join TRANSPLANT_PRTCL
+			on TRANSPLANT_PRTCL.EPISODE_ID = EPISODE_ALL.EPISODE_ID
+		inner join ZC_TX_PROTOCOLS
+			on TRANSPLANT_PRTCL.TX_PROTOCOLS_C = ZC_TX_PROTOCOLS.TX_PROTOCOLS_C
+	;
+
+snippet notes
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
+			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID)      as EPISODE_SEQUENCE
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM                         as ANASTOMOSIS_TIME
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME = 'Kidney'
+	),
+	VISIT as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, PAT_ENC.PAT_ENC_CSN_ID
+	, PAT_ENC.CONTACT_DATE
+	, PAT_ENC.APPT_TIME
+	, CLARITY_DEP.DEPARTMENT_ID
+	, CLARITY_DEP.DEPARTMENT_NAME
+	, ZC_DISP_ENC_TYPE.NAME as ENC_TYPE
+	, ZC_APPT_STATUS.NAME as APPT_STATUS
+	from
+		PTS
+		inner join PAT_ENC
+			on PAT_ENC.PAT_ID = PTS.PAT_ID
+		inner join CLARITY_DEP
+			on CLARITY_DEP.DEPARTMENT_ID = PAT_ENC.DEPARTMENT_ID
+		left join ZC_DISP_ENC_TYPE
+			on ZC_DISP_ENC_TYPE.DISP_ENC_TYPE_C = PAT_ENC.ENC_TYPE_C
+		left join ZC_APPT_STATUS
+			on ZC_APPT_STATUS.APPT_STATUS_C = PAT_ENC.APPT_STATUS_C
+	), 
+	NOTES as
+	(
+	select
+		VISIT.PAT_ENC_CSN_ID
+	, VISIT.SUMMARY_BLOCK_ID
+	, CLARITY_SER.PROV_ID
+	, CLARITY_SER.PROV_NAME as NOTE_AUTHOR
+	, ZC_NOTE_SER.TITLE as AUTHOR_TYPE
+	, EPIC_UTIL.EFN_UTC_TO_LOCAL(NOTE_ENC_INFO.SPEC_NOTE_TIME_DTTM) as NOTE_TIME -- Can't find info on this field anywhere, but times match with Hyperspace
+	, ZC_NOTE_STATUS.NAME AS NOTE_STATUS
+	, HNO_NOTE_TEXT.LINE as NOTE_LINE
+	, HNO_NOTE_TEXT.NOTE_TEXT
+	from
+		VISIT
+		inner join HNO_INFO
+			on VISIT.PAT_ENC_CSN_ID = HNO_INFO.PAT_ENC_CSN_ID             -- Main note table
+		inner join NOTE_ENC_INFO
+			on NOTE_ENC_INFO .NOTE_ID = HNO_INFO.NOTE_ID                    -- Stores overtime information
+		inner join CLARITY_SER
+			on NOTE_ENC_INFO.AUTH_LNKED_PROV_ID = CLARITY_SER.PROV_ID       -- Note author
+		inner join ZC_NOTE_SER
+		  on CLARITY_SER.PROVIDER_TYPE_C = ZC_NOTE_SER.SERVICE_TYPE_C     -- Author type
+		inner join HNO_NOTE_TEXT
+		  on NOTE_ENC_INFO.CONTACT_SERIAL_NUM = HNO_NOTE_TEXT.NOTE_CSN_ID -- Note text
+		left join ZC_NOTE_STATUS
+			on NOTE_ENC_INFO.NOTE_STATUS_C = ZC_NOTE_STATUS.NOTE_STATUS_C   -- Note status
+		left join ZC_NOTE_TYPE_IP
+			on HNO_INFO.IP_NOTE_TYPE_C = ZC_NOTE_TYPE_IP.TYPE_IP_C          -- Inpatient Note type
+	where ZC_NOTE_STATUS.NAME not in ('Deleted','Incomplete')
+	)
+	select distinct
+		PTS.SUMMARY_BLOCK_ID
+	, PTS.PAT_ID
+	, PTS.PAT_NAME
+	, PTS.MRN
+	, PTS.EPISODE_SEQUENCE
+	, PTS.TRANSPLANT_DATE
+	, PTS.ANASTOMOSIS_TIME
+	, VISIT.CONTACT_DATE
+	, VISIT.APPT_TIME
+	, VISIT.DEPARTMENT_NAME
+	, VISIT.ENC_TYPE
+	, VISIT.APPT_STATUS
+	, NOTES.PROV_ID
+	, NOTES.NOTE_AUTHOR
+	, NOTES.AUTHOR_TYPE
+	, NOTES.NOTE_TIME
+	, NOTES.NOTE_STATUS
+	, NOTES.NOTE_LINE
+	, NOTES.NOTE_TEXT
+	from
+		PTS
+		left join VISIT
+			on VISIT.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		left join NOTES
+			on NOTES.PAT_ENC_CSN_ID = VISIT.PAT_ENC_CSN_ID
+	order by
+		PTS.PAT_NAME
+	, PTS.EPISODE_SEQUENCE
+	;
+
+snippet dialysismaintenance
+	with PTS as
+	(
+	select
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID)      as EPISODE_SEQUENCE
+	, cast(TRANSPLANT_INFO.TXP_CALC_EVAL_DATE as date)  as EVAL_START_DATE
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME = 'Kidney'
+	),
+	DIALYSIS as
+	(
+	select
+		PT_DIALYSIS_HX.PAT_ID
+	, PTS.SUMMARY_BLOCK_ID
+	, CLARITY_POS.POS_NAME
+	, PT_DIALYSIS_HX.DIALYSIS_START_DATE
+	, PT_DIALYSIS_HX.DIALYSIS_END_DATE
+	, ZC_DIALYSIS_TYPE.NAME as DIALYSIS_TYPE
+	, PT_DIALYSIS_HX.DIALYSIS_TYPE_C
+	, CONCAT((case when CLARITY_POS.ADDRESS_LINE_1 is not null then CLARITY_POS.ADDRESS_LINE_1 else '' end),(case when CLARITY_POS.ADDRESS_LINE_2 is not null then CONCAT(' ',CLARITY_POS.ADDRESS_LINE_2) else '' end)) as DIALYSIS_ADDRESS
+	, CLARITY_POS.CITY as DIALYSIS_CITY
+	, CLARITY_POS.ZIP as ZIP
+	, ZC_STATE.ABBR
+	, CLARITY_POS.PHONE
+	, OLD_DIALYSIS.PAT_ENC_DATE_REAL
+	from
+		PTS
+		inner join PT_DIALYSIS_HX
+			on PT_DIALYSIS_HX.PAT_ID = PTS.PAT_ID
+		inner join CLARITY_POS
+			on CLARITY_POS.POS_ID = PT_DIALYSIS_HX.DIALYSIS_EAF_ID
+		inner join ZC_DIALYSIS_TYPE
+			on ZC_DIALYSIS_TYPE.DIALYSIS_TYPE_C = PT_DIALYSIS_HX.DIALYSIS_TYPE_C
+		inner join ZC_STATE
+			on ZC_STATE.STATE_C = CLARITY_POS.STATE_C
+		left join PT_DIALYSIS_HX OLD_DIALYSIS
+			on PT_DIALYSIS_HX.PAT_ID = OLD_DIALYSIS.PAT_ID
+			and PT_DIALYSIS_HX.PAT_ENC_DATE_REAL < OLD_DIALYSIS.PAT_ENC_DATE_REAL  --find the latest history contact
+	where OLD_DIALYSIS.PAT_ENC_DATE_REAL is null
+	)
+	select
+		PTS.PAT_NAME
+	, PTS.MRN
+	, PTS.EVAL_START_DATE
+	, CASE When DIALYSIS.POS_NAME Is Null And DIALYSIS.DIALYSIS_TYPE_C Is Not Null Then 'Unspecified' Else  DIALYSIS.POS_NAME END
+	, DIALYSIS.DIALYSIS_START_DATE
+	, DIALYSIS.DIALYSIS_END_DATE
+	, DIALYSIS.DIALYSIS_TYPE
+	from
+		PTS
+		left join DIALYSIS
+			on DIALYSIS.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+	order by
+		PTS.PAT_NAME
+	, PTS.EVAL_START_DATE
+	;
+
+snippet flowindex
+	select
+		TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, TRANSPLANT_INFO.TX_SURG_DT as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM as ANASTOMOSIS_TIME
+	, PAT_ENC_HSP.PAT_ENC_CSN_ID
+	, ADMITTING_SERVICE.NAME as ADMITTING_SERVICE
+	, DISCHARGE_SERVICE.NAME as DISCHARGE_SERVICE
+	, ADMITTING_PROV.PROV_NAME as ADMITTING_PROVIDER
+	, DISCHARGE_PROV.PROV_NAME as DISCHARGE_PROVIDER
+	, PAT_ENC_HSP.HOSP_ADMSN_TIME as ADMISSION_DATE
+	, PAT_ENC_HSP.HOSP_DISCH_TIME as DISCHARGE_DATE
+	, V_PAT_ADT_LOCATION_HX.ADT_DEPARTMENT_ID as DEPARTMENT_ID
+	, V_PAT_ADT_LOCATION_HX.ADT_DEPARTMENT_NAME as DEPARTMENT_NAME
+	, V_PAT_ADT_LOCATION_HX.IN_DTTM
+	, V_PAT_ADT_LOCATION_HX.OUT_DTTM
+	, cast(datediff(minute, V_PAT_ADT_LOCATION_HX.IN_DTTM, V_PAT_ADT_LOCATION_HX.OUT_DTTM) as float) as LOS_MINUTES
+	, cast(datediff(hour, V_PAT_ADT_LOCATION_HX.IN_DTTM, V_PAT_ADT_LOCATION_HX.OUT_DTTM) as float) as LOS_HOURS
+	, datediff(day, V_PAT_ADT_LOCATION_HX.IN_DTTM, V_PAT_ADT_LOCATION_HX.OUT_DTTM) as LOS_DAYS
+	, case
+			when CLARITY_DEP.RPT_GRP_ELEVEN_C = 4
+			then 'Y'
+			else 'N'
+		end as ICU_YN
+	, case
+			when coalesce(ORGAN.ANASTOMOSIS_ST_DTTM, TRANSPLANT_INFO.TX_SURG_DT) between V_PAT_ADT_LOCATION_HX.IN_DTTM and V_PAT_ADT_LOCATION_HX.OUT_DTTM
+			then 'PERI'
+			when coalesce(ORGAN.ANASTOMOSIS_ST_DTTM, TRANSPLANT_INFO.TX_SURG_DT) >= V_PAT_ADT_LOCATION_HX.IN_DTTM
+			then 'PRE'
+			when coalesce(ORGAN.ANASTOMOSIS_ST_DTTM, TRANSPLANT_INFO.TX_SURG_DT) < V_PAT_ADT_LOCATION_HX.IN_DTTM
+			then 'POST'
+		end as RELATIVE_TO_TRANSPLANT
+	, dense_rank() over (partition by V_PAT_ADT_LOCATION_HX.PAT_ENC_CSN order by V_PAT_ADT_LOCATION_HX.IN_DTTM asc) as SEQUENCE_ASC
+	, dense_rank() over (partition by V_PAT_ADT_LOCATION_HX.PAT_ENC_CSN order by V_PAT_ADT_LOCATION_HX.IN_DTTM desc) as SEQUENCE_DESC
+	from
+		TRANSPLANT_INFO
+		inner join V_PAT_ADT_LOCATION_HX
+			on V_PAT_ADT_LOCATION_HX.PAT_ENC_CSN = TRANSPLANT_INFO.TXP_ADMIT_CSN
+		inner join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = V_PAT_ADT_LOCATION_HX.PAT_ENC_CSN
+		inner join CLARITY_DEP
+			on CLARITY_DEP.DEPARTMENT_ID = V_PAT_ADT_LOCATION_HX.ADT_DEPARTMENT_ID
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+		left join CLARITY_ADT ADMITTING_EVENT
+			on ADMITTING_EVENT.EVENT_ID = PAT_ENC_HSP.ADM_EVENT_ID
+		left join ZC_PAT_SERVICE ADMITTING_SERVICE
+			on ADMITTING_SERVICE.HOSP_SERV_C = ADMITTING_EVENT.PAT_SERVICE_C
+		left join CLARITY_ADT DISCHARGE_EVENT
+			on DISCHARGE_EVENT.EVENT_ID = PAT_ENC_HSP.DIS_EVENT_ID
+		left join ZC_PAT_SERVICE DISCHARGE_SERVICE
+			on DISCHARGE_SERVICE.HOSP_SERV_C = DISCHARGE_EVENT.PAT_SERVICE_C
+		inner join CLARITY_SER ADMITTING_PROV
+			on ADMITTING_PROV.PROV_ID = PAT_ENC_HSP.ADMISSION_PROV_ID
+		left join CLARITY_SER DISCHARGE_PROV
+			on DISCHARGE_PROV.PROV_ID = PAT_ENC_HSP.DISCHARGE_PROV_ID
+	where V_PAT_ADT_LOCATION_HX.ADT_DEPARTMENT_NAME not in ('PRE-ADMISSION', 'POST-DISCHARGE')
+		and TRANSPLANT_INFO.TX_SURG_DT is not null
+	;
+
+snippet secureshare
+	https://secureshare.apps.upenn.edu
+
+snippet smartform
+	select
+		SMRTDTA_ELEM_DATA.HLV_ID
+	, SMRTDTA_ELEM_DATA.ELEMENT_ID
+	, SMRTDTA_ELEM_DATA.CUR_VALUE_SOURCE
+	, SMRTDTA_ELEM_DATA.CONTEXT_NAME
+	, SMRTDTA_ELEM_DATA.CONTACT_SERIAL_NUM
+	, SMRTDTA_ELEM_DATA.RECORD_ID_VARCHAR
+	, SMRTDTA_ELEM_DATA.RECORD_ID_NUMERIC
+	, SMRTDTA_ELEM_DATA.PAT_LINK_ID
+	, SMRTDTA_ELEM_VALUE.LINE
+	, SMRTDTA_ELEM_VALUE.SMRTDTA_ELEM_VALUE
+	, SMRTDTA_ELEM_VALUE.ELEM_NW_ID_VAL_NUM
+	from
+		SMRTDTA_ELEM_DATA
+		left join SMRTDTA_ELEM_VALUE
+			on SMRTDTA_ELEM_VALUE.HLV_ID = SMRTDTA_ELEM_DATA.HLV_ID
+	where SMRTDTA_ELEM_DATA.ELEMENT_ID = '${0:UPHS#1281}'
+	;
+
+snippet gender
+	select top 10
+		PATIENT.PAT_NAME
+	, ZC_SEX.NAME as GENDER
+	from
+		PATIENT
+		left join ZC_SEX
+			on ZC_SEX.RCPT_MEM_SEX_C = PATIENT.SEX_C
+	;
+
+snippet race
+	select top 10
+		PATIENT.PAT_NAME
+	, ZC_PATIENT_RACE.NAME as RACE
+	from
+		PATIENT
+		left join PATIENT_RACE
+			on PATIENT_RACE.PAT_ID = PATIENT.PAT_ID
+		left join ZC_PATIENT_RACE
+			on ZC_PATIENT_RACE.PATIENT_RACE_C = PATIENT_RACE.PATIENT_RACE_C
+	;
+
+snippet fiscaldates
+	select top 10
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, cast(TRANSPLANT_INFO.TX_SURG_DT as date)          as TRANSPLANT_DATE
+	, case 
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('07','08','09') then datepart(yyyy,TRANSPLANT_INFO.TX_SURG_DT) + 1
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('10','11','12') then datepart(yyyy,TRANSPLANT_INFO.TX_SURG_DT) + 1
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('01','02','03') then datepart(yyyy,TRANSPLANT_INFO.TX_SURG_DT)
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('04','05','06') then datepart(yyyy,TRANSPLANT_INFO.TX_SURG_DT)
+		end as FISCAL_YR
+	, case 
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('07','08','09') then 'Q1'
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('10','11','12') then 'Q2'
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('01','02','03') then 'Q3'
+			when datepart(mm,TRANSPLANT_INFO.TX_SURG_DT) in ('04','05','06') then 'Q4'
+		end as FISCAL_QTR
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+	where TRANSPLANT_INFO.TX_SURG_DT is not null
+	;
+
+snippet visits
+	select top 100
+		TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID
+			order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
+	, PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.TX_SURG_DT as TRANSPLANT_DATE
+	, PAT_ENC.PAT_ENC_CSN_ID
+	, PAT_ENC.CONTACT_DATE
+	, PAT_ENC.APPT_TIME
+	, CLARITY_DEP.DEPARTMENT_ID
+	, CLARITY_DEP.DEPARTMENT_NAME
+	, ZC_DISP_ENC_TYPE.NAME as ENC_TYPE
+	, ZC_APPT_STATUS.NAME as APPT_STATUS
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		inner join PAT_ENC
+			on PAT_ENC.PAT_ID = PATIENT.PAT_ID
+		inner join CLARITY_DEP
+			on CLARITY_DEP.DEPARTMENT_ID = PAT_ENC.DEPARTMENT_ID
+		left join ZC_DISP_ENC_TYPE
+			on ZC_DISP_ENC_TYPE.DISP_ENC_TYPE_C = PAT_ENC.ENC_TYPE_C
+		left join ZC_APPT_STATUS
+			on ZC_APPT_STATUS.APPT_STATUS_C = PAT_ENC.APPT_STATUS_C
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and ZC_TX_CLASS.NAME = '${0:Kidney}'
+	order by
+		PATIENT.PAT_NAME
+	, TRANSPLANT_INFO.TX_SURG_DT
+	, PAT_ENC.CONTACT_DATE
+	;
+
+snippet type
+	, case TRANSPLANT_INFO.TX_EPSD_TYPE_C
+			when 1
+			then 'Donor'
+			when 2
+			then 'Recipient'
+		end as TRANSPLANT_TYPE
+
+snippet endreferral
+	, case
+			when TRANSPLANT_INFO.TXP_CALC_RFL_DATE is not null
+			then (
+				case
+					when TRANSPLANT_INFO.TXP_CALC_EVAL_DATE is not null
+					then TRANSPLANT_INFO.TXP_CALC_EVAL_DATE
+					when TRANSPLANT_INFO.TX_CENTER_WL_DT is not null
+					then TRANSPLANT_INFO.TX_CENTER_WL_DT
+					when TRANSPLANT_INFO.TX_SURG_DT is not null
+					then TRANSPLANT_INFO.TX_SURG_DT
+					when ZC_TX_CURRENT_STAG.NAME = 'Transplanted'
+					then TRANSPLANT_INFO.TX_CURRENT_STAGE_DT
+					when ZC_TX_CURRENT_STAG.NAME = 'Referral' and ZC_TX_STAT_OUT.NAME = 'Ineligible'
+					then TRANSPLANT_INFO.TX_CURRENT_STAGE_DT
+					when PATIENT.DEATH_DATE is not null
+					then PATIENT.DEATH_DATE
+					else getdate()
+				end 
+			)
+		end as REFERRAL_END_DATE
+
+snippet endevaluation
+	, case
+			when TRANSPLANT_INFO.TXP_CALC_EVAL_DATE is not null
+			then (
+				case
+					when ZC_TX_CURRENT_STAG.NAME = 'Evaluation' and ZC_TX_STAT_OUT.NAME = 'Ineligible'
+					then TRANSPLANT_INFO.TX_CURRENT_STAGE_DT
+					when ZC_TX_CURRENT_STAG.NAME = 'Evaluation' and ZC_TX_STAT_OUT.NAME = 'Active'
+					then null
+					when ZC_TX_CURRENT_STAG.NAME in ('Waitlist', 'Transplanted') and TRANSPLANT_INFO.TX_CENTER_WL_DT is not null
+					then TRANSPLANT_INFO.TX_CENTER_WL_DT
+					when ZC_TX_CURRENT_STAG.NAME = 'Transplanted' and TRANSPLANT_INFO.TX_CENTER_WL_DT is null
+					then TRANSPLANT_INFO.TX_SURG_DT
+					when PATIENT.DEATH_DATE is not null
+					then PATIENT.DEATH_DATE
+				end 
+			)
+			else null
+		end as EVAL_END_DATE
+
+snippet committeedecision
+	COMMITTEE_REVIEW as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, ZC_TXP_DECISION.NAME as COMMITTEE_DECISION
+	, case
+			when TXP_COMMITTEE_OTS.TXP_COMMITTEE_DT is not null
+			then cast(TXP_COMMITTEE_OTS.TXP_COMMITTEE_DT as DATE)
+			else cast(TXP_COMMITTEE_OTS.CONTACT_DATE as DATE)
+		end as CR_DATE
+	, case
+			when TXP_COMMITTEE_OTS.TXP_COMMITTEE_DT is not null
+			then 'TXP_COMMITTEE_OTS.TXP_COMMITTEE_DT'
+			else 'TXP_COMMITTEE_OTS.CONTACT_DATE'
+		end as CR_CHOICE
+	, dense_rank() over (partition by PTS.SUMMARY_BLOCK_ID order by TXP_COMMITTEE_OTS.TXP_COMMITTEE_DT desc, TXP_COMMITTEE_OTS.CONTACT_DATE desc) as REVIEW_SEQUENCE
+	, PAT_ENC.PAT_ENC_CSN_ID
+	from
+		PTS
+		inner join PAT_ENC
+			on PAT_ENC.PAT_ID = PTS.PAT_ID
+		inner join TXP_COMMITTEE_OTS
+			on TXP_COMMITTEE_OTS.PAT_ENC_CSN_ID = PAT_ENC.PAT_ENC_CSN_ID
+		inner join ZC_TXP_DECISION
+			on ZC_TXP_DECISION.TXP_COMM_DECISION_C = TXP_COMMITTEE_OTS.TXP_COMM_DECISION_C
+	where PAT_ENC.ENC_TYPE_C = 97 -- Committee Review
+	),
+
+snippet careteamphysician
+	CARE_TEAM_PHYSICIAN as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, CLARITY_SER.PROV_NAME
+	, ZC_TRTMT_TEAM_REL.NAME as PROVIDER_ROLE
+	, EPSD_CARE_PROVIDER.CARE_ROLE_C
+	from
+		PTS
+		inner join EPSD_CARE_PROVIDER
+			on EPSD_CARE_PROVIDER.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		inner join CLARITY_SER
+			on CLARITY_SER.PROV_ID = EPSD_CARE_PROVIDER.CARE_PROVIDER_ID
+		inner join ZC_TRTMT_TEAM_REL
+			on ZC_TRTMT_TEAM_REL.TRTMNT_TEAM_REL_C = EPSD_CARE_PROVIDER.CARE_ROLE_C
+	where EPSD_CARE_PROVIDER.CARE_ROLE_C in (36, -- Transplant Hepatologist
+	                                         37, -- Transplant Nephrologist
+																					 40, -- Transplant Cardiologist
+																					 41) -- Transplant Pulmonologist
+	)
+
+snippet careteam
+	CARE_TEAM as
+	(
+	select
+		PTS.SUMMARY_BLOCK_ID
+	, CLARITY_SER.PROV_NAME
+	, EPSD_CARE_PROVIDER.CARE_ROLE_C
+	, ZC_TRTMT_TEAM_REL.NAME as CARE_ROLE
+	, COORDINATOR_SER.PROV_NAME as TRANSPLANT_COORDINATOR
+	from
+		PTS
+		inner join EPSD_CARE_PROVIDER
+			on EPSD_CARE_PROVIDER.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+		inner join CLARITY_SER
+			on CLARITY_SER.PROV_ID = EPSD_CARE_PROVIDER.CARE_PROVIDER_ID
+		inner join ZC_TRTMT_TEAM_REL
+			on ZC_TRTMT_TEAM_REL.TRTMNT_TEAM_REL_C = EPSD_CARE_PROVIDER.CARE_ROLE_C
+		inner join
+			(
+				select
+					*
+				, dense_rank() over (partition by SUMMARY_BLOCK_ID order by LINE desc) as SEQUENCE
+				from
+					TRANSPLANT_COOR_HX
+			) TRANSPLANT_COOR_HX
+			on TRANSPLANT_COOR_HX.SUMMARY_BLOCK_ID = PTS.SUMMARY_BLOCK_ID
+			and TRANSPLANT_COOR_HX.SEQUENCE = 1
+		inner join CLARITY_SER COORDINATOR_SER
+			on COORDINATOR_SER.PROV_ID = TRANSPLANT_COOR_HX.TX_COORD_ID
+	)
+
+snippet linkenc
+	inner join PAT_OR_ADM_LINK
+		on PAT_OR_ADM_LINK.OR_LINK_CSN = TRANSPLANT_INFO.TXP_ADMIT_CSN
+	inner join PAT_ENC
+		on PAT_ENC.PAT_ENC_CSN_ID = PAT_OR_ADM_LINK.PAT_ENC_CSN_ID
+
+snippet grouperdx
+	select
+		CLARITY_EDG.*
+	from
+		CLARITY_EDG
+		inner join GROUPER_COMPILED_REC_LIST GROUPER
+			on GROUPER.GROUPER_RECORDS_NUMERIC_ID = CLARITY_EDG.DX_ID
+	where GROUPER.BASE_GROUPER_ID = '${0:__grouper_id__}'
+	;
+
+snippet hemodynamics
+	with RECIPIENT as
+	(
+	select distinct
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, PATIENT.BIRTH_DATE
+	, PATIENT.DEATH_DATE
+	, ZC_SEX.NAME as GENDER
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
+	, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE as INDEX_ADMISSION_DATE
+	, TRANSPLANT_INFO.TX_SURG_DT          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM           as ANASTOMOSIS_TIME
+	, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT as INDEX_DISCHARGE_DATE
+	, TRANSPLANT_CLASS.TX_CLASS_C
+	, TRANSPLANT_INFO.TXP_ADMIT_CSN
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+		left join ZC_SEX
+			on ZC_SEX.RCPT_MEM_SEX_C = PATIENT.SEX_C
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and (TRANSPLANT_INFO.TX_IS_HISTORIC_YN <> 'Y' or TRANSPLANT_INFO.TX_IS_HISTORIC_YN is null)
+		and ZC_TX_CLASS.NAME = 'Heart'
+	),
+	FLOWSHEET as
+	(
+	select distinct
+		RECIPIENT.SUMMARY_BLOCK_ID
+	, IP_FLT_DATA.DISPLAY_NAME as TEMPLATE_NAME
+	, IP_FLO_GP_DATA.DISP_NAME as ROW_NAME
+	, IP_FLWSHT_MEAS.RECORDED_TIME as TIME_TAKEN
+	, IP_FLWSHT_MEAS.MEAS_VALUE as VALUE
+	, IP_FLO_GP_DATA.UNITS
+	from
+		RECIPIENT
+		inner join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = RECIPIENT.TXP_ADMIT_CSN
+		inner join IP_FLWSHT_REC
+			on IP_FLWSHT_REC.INPATIENT_DATA_ID = PAT_ENC_HSP.INPATIENT_DATA_ID
+		inner join IP_FLWSHT_MEAS
+			on IP_FLWSHT_MEAS.FSD_ID = IP_FLWSHT_REC.FSD_ID
+		inner join IP_FLT_DATA
+			on IP_FLT_DATA.TEMPLATE_ID = IP_FLWSHT_MEAS.FLT_ID
+		left join IP_FLO_GP_DATA
+			on IP_FLO_GP_DATA.FLO_MEAS_ID = IP_FLWSHT_MEAS.FLO_MEAS_ID
+	where IP_FLT_DATA.TEMPLATE_ID = '1650000002'
+	)
+	select distinct
+		RECIPIENT.PAT_NAME         as 'Patient Name'
+	, RECIPIENT.MRN              as 'MRN'
+	, RECIPIENT.TRANSPLANT_DATE  as 'Transplant Date'
+	, RECIPIENT.ANASTOMOSIS_TIME as 'Anastomosis Time'
+	, FLOWSHEET.TEMPLATE_NAME    as 'Flowsheet Name'
+	, FLOWSHEET.ROW_NAME         as 'Row Name'
+	, FLOWSHEET.TIME_TAKEN       as 'Time Taken'
+	, FLOWSHEET.VALUE            as 'Value'
+	, FLOWSHEET.UNITS            as 'Units'
+	from
+		RECIPIENT
+		left join FLOWSHEET
+			on FLOWSHEET.SUMMARY_BLOCK_ID = RECIPIENT.SUMMARY_BLOCK_ID
+	order by
+		RECIPIENT.PAT_NAME
+	, RECIPIENT.TRANSPLANT_DATE
+	, FLOWSHEET.TEMPLATE_NAME
+	, FLOWSHEET.TIME_TAKEN
+	, FLOWSHEET.ROW_NAME
+	, FLOWSHEET.VALUE
+	, FLOWSHEET.UNITS
+	;
+
+snippet cupid
+	with RECIPIENT as
+	(
+	select distinct
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, PATIENT.BIRTH_DATE
+	, PATIENT.DEATH_DATE
+	, ZC_SEX.NAME as GENDER
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
+	, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE as INDEX_ADMISSION_DATE
+	, TRANSPLANT_INFO.TX_SURG_DT          as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM           as ANASTOMOSIS_TIME
+	, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT as INDEX_DISCHARGE_DATE
+	, TRANSPLANT_CLASS.TX_CLASS_C
+	, TRANSPLANT_INFO.TXP_ADMIT_CSN
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+		left join ZC_SEX
+			on ZC_SEX.RCPT_MEM_SEX_C = PATIENT.SEX_C
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and (TRANSPLANT_INFO.TX_IS_HISTORIC_YN <> 'Y' or TRANSPLANT_INFO.TX_IS_HISTORIC_YN is null)
+		and ZC_TX_CLASS.NAME = 'Heart'
+	),
+	FLOWSHEET as
+	(
+	select distinct
+		RECIPIENT.SUMMARY_BLOCK_ID
+	, IP_FLT_DATA.DISPLAY_NAME as TEMPLATE_NAME
+	, IP_FLO_GP_DATA.DISP_NAME as ROW_NAME
+	, IP_FLWSHT_MEAS.RECORDED_TIME as TIME_TAKEN
+	, IP_FLWSHT_MEAS.MEAS_VALUE as VALUE
+	, IP_FLO_GP_DATA.UNITS
+	from
+		RECIPIENT
+		inner join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = RECIPIENT.TXP_ADMIT_CSN
+		inner join IP_FLWSHT_REC
+			on IP_FLWSHT_REC.INPATIENT_DATA_ID = PAT_ENC_HSP.INPATIENT_DATA_ID
+		inner join IP_FLWSHT_MEAS
+			on IP_FLWSHT_MEAS.FSD_ID = IP_FLWSHT_REC.FSD_ID
+		inner join IP_FLT_DATA
+			on IP_FLT_DATA.TEMPLATE_ID = IP_FLWSHT_MEAS.FLT_ID
+		left join IP_FLO_GP_DATA
+			on IP_FLO_GP_DATA.FLO_MEAS_ID = IP_FLWSHT_MEAS.FLO_MEAS_ID
+	where IP_FLT_DATA.TEMPLATE_ID in ('1180000004', '1180000026')
+	)
+	select distinct
+		RECIPIENT.PAT_NAME         as 'Patient Name'
+	, RECIPIENT.MRN              as 'MRN'
+	, RECIPIENT.TRANSPLANT_DATE  as 'Transplant Date'
+	, RECIPIENT.ANASTOMOSIS_TIME as 'Anastomosis Time'
+	, FLOWSHEET.TEMPLATE_NAME    as 'Flowsheet Name'
+	, FLOWSHEET.ROW_NAME         as 'Row Name'
+	, FLOWSHEET.TIME_TAKEN       as 'Time Taken'
+	, FLOWSHEET.VALUE            as 'Value'
+	, FLOWSHEET.UNITS            as 'Units'
+	from
+		RECIPIENT
+		left join FLOWSHEET
+			on FLOWSHEET.SUMMARY_BLOCK_ID = RECIPIENT.SUMMARY_BLOCK_ID
+	order by
+		RECIPIENT.PAT_NAME
+	, RECIPIENT.TRANSPLANT_DATE
+	, FLOWSHEET.TEMPLATE_NAME
+	, FLOWSHEET.TIME_TAKEN
+	, FLOWSHEET.ROW_NAME
+	, FLOWSHEET.VALUE
+	, FLOWSHEET.UNITS
+	;
+
+snippet mrn
+		and IDENTITY_ID.IDENTITY_ID = '${0:__MRN__}'
+
+snippet abo
+	with PTS as
+	(
+	select distinct
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and (TRANSPLANT_INFO.TX_IS_HISTORIC_YN <> 'Y' or TRANSPLANT_INFO.TX_IS_HISTORIC_YN is null)
+	),
+	BLOOD_TYPE as
+	(
+	select
+		PTS.PAT_ID
+	, ORDER_RESULTS.ORD_VALUE as ABO --*sms 12/08 343734 - pat_id now comes from order_proc
+	, ORDER_PROC.ORDER_TIME
+	, ORDER_PROC_2.SPECIMN_TAKEN_TIME as COLLECTED_TIME
+	, dense_rank() over (partition by ORDER_PROC.PAT_ID order by ORDER_RESULTS.RESULT_TIME desc) as SORT --*sms 12/08 343734 - pat_id now comes from order_proc
+	from
+		PTS
+		inner join ORDER_PROC
+			on ORDER_PROC.PAT_ID = PTS.PAT_ID
+		inner join ORDER_RESULTS
+			on ORDER_RESULTS.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
+		left outer join ORDER_PROC_2
+			on ORDER_PROC_2.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
+	where ORDER_RESULTS.LAB_STATUS_C > 2                               --final result and above
+		and ORDER_RESULTS.COMPONENT_ID in
+			(
+				select
+					CLARITY_COMPONENT.COMPONENT_ID     --this gets the list of possible LRR IDs that can be used to result blood type
+				from
+					ABO_SETUP
+					inner join CLARITY_COMPONENT
+						on (ABO_SETUP.ABO_COMPONENT_TYP_C=1 and ABO_SETUP.ABO_COMPONENT_NAME=CLARITY_COMPONENT.COMMON_NAME)
+							or (ABO_SETUP.ABO_COMPONENT_TYP_C=2 and ABO_SETUP.ABO_COMPONENT_NAME=CLARITY_COMPONENT.BASE_NAME)
+							or (ABO_SETUP.ABO_COMPONENT_TYP_C=3 and ABO_SETUP.ABO_COMPONENT_NAME=CLARITY_COMPONENT.NAME)
+							or (ABO_SETUP.ABO_COMPONENT_TYP_C=4 and ABO_SETUP.ABO_COMPONENT_NAME=cast(CLARITY_COMPONENT.COMPONENT_ID as varchar(18)))
+			)
+	)
+	select distinct
+		PTS.PAT_NAME
+	, PTS.MRN
+	, BLOOD_TYPE.ABO
+	from
+		PTS
+		left join BLOOD_TYPE
+			on BLOOD_TYPE.PAT_ID = PTS.PAT_ID
+			and BLOOD_TYPE.SORT = 1
+	;
+
+snippet dr
+	, dense_rank() over (partition by ${1:TRANSPLANT_INFO.SUMMARY_BLOCK_ID} order by ${2:TRANSPLANT_INFO.TX_CURRENT_STAGE_DT}) as SORT
+
+snippet hla
+	select distinct
+		PTS.PAT_NAME
+	, PTS.MRN
+	, CLARITY_EAP.PROC_NAME
+	, CLARITY_COMPONENT.NAME
+	, ORDER_PROC.ORDER_TIME
+	, ORDER_PROC_2.SPECIMN_TAKEN_TIME as COLLECTED_TIME
+	, ORDER_RESULTS.RESULT_TIME
+	, ORDER_RESULTS.LINE
+	, ORDER_RESULTS.ORD_VALUE
+	, ORDER_RES_COMP_CMT.LINE_COMMENT
+	, ORDER_RES_COMP_CMT.RESULTS_COMP_CMT
+	from
+		${1:TEMP_TABLE} PTS
+		inner join ORDER_PROC
+			on ORDER_PROC.PAT_ID = PTS.PAT_ID
+		inner join CLARITY_EAP
+			on CLARITY_EAP.PROC_ID = ORDER_PROC.PROC_ID
+		inner join ORDER_RESULTS
+			on ORDER_RESULTS.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
+		inner join CLARITY_COMPONENT
+			on CLARITY_COMPONENT.COMPONENT_ID = ORDER_RESULTS.COMPONENT_ID
+		left join ORDER_RES_COMP_CMT
+			on ORDER_RES_COMP_CMT.ORDER_ID = ORDER_PROC.ORDER_PROC_ID 
+			and ORDER_RES_COMP_CMT.COMPONENT_ID = ORDER_RESULTS.COMPONENT_ID
+		left join ORDER_PROC_2
+			on ORDER_PROC_2.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
+	where CLARITY_EAP.PROC_CODE in ('CPRAAGSAVD', 'HLALSA1', 'HLADSA1', 'HLADSA2', 'HLALSA2')
+	order by
+		PTS.PAT_NAME
+	, ORDER_PROC.ORDER_TIME
+	, CLARITY_EAP.PROC_NAME
+	, ORDER_RESULTS.LINE
+	, ORDER_RES_COMP_CMT.LINE_COMMENT
+	;
+
+snippet lj
+	LEFT OUTER JOIN ${1:table} ${2:alias}
+		ON $2.${3:field} = ${4:other_table}.$3
+
+snippet ij
+	INNER JOIN ${1:table} ${2:alias}
+		ON $2.${3:field} = ${4:other_table}.$3
+
+snippet cw
+	, CASE
+			WHEN ${1:this}
+			THEN ${2:that}
+			ELSE ${3:thus}
+		END AS $0
+
+snippet biopsy
+	select top 10
+		PTS.PAT_ID
+	, PTS.PAT_NAME
+	, ORDERS.ORDER_ID
+	, CLARITY_COMPONENT.COMMON_NAME
+	, ORDER_PROC.ORDER_TIME
+	, ORDER_PROC_2.SPECIMN_TAKEN_TIME as COLLECTED_TIME
+	, ORDER_RES_COMP_CMT.LINE_COMMENT as LINE
+	, ORDER_RES_COMP_CMT.RESULTS_COMP_CMT as MICROSCOPIC_DESCRIPTION
+	, ZC_PAT_CLASS.NAME as PATIENT_CLASS
+	from
+		PATIENT
+		inner join ORDERS
+			on ORDERS.PAT_ID = PATIENT.PAT_ID
+		inner join ORDER_RES_COMP_CMT
+			on ORDER_RES_COMP_CMT.ORDER_ID = ORDERS.ORDER_ID
+		inner join CLARITY_COMPONENT
+			on CLARITY_COMPONENT.COMPONENT_ID = ORDER_RES_COMP_CMT.COMPONENT_ID
+		inner join ORDER_PROC
+			on ORDER_PROC.ORDER_PROC_ID = ORDERS.ORDER_ID
+		inner join ORDER_PROC_2
+			on ORDER_PROC_2.ORDER_PROC_ID = ORDER_PROC.ORDER_PROC_ID
+		inner join PAT_ENC_2
+			on PAT_ENC_2.PAT_ENC_CSN_ID = ORDER_PROC.PAT_ENC_CSN_ID
+		left outer join ZC_PAT_CLASS
+			on ZC_PAT_CLASS.ADT_PAT_CLASS_C = PAT_ENC_2.ADT_PAT_CLASS_C
+	where ORDER_PROC.PROC_CODE = 'C8006602'
+		and CLARITY_COMPONENT.COMMON_NAME = 'MICROSCOPIC DESCRIPTION'
+	;
+
+snippet getdatatypes
+	select
+		C.COLUMN_ID
+	, C.NAME
+	, T.NAME as DATA_TYPE
+	, C.MAX_LENGTH
+	, C.PRECISION
+	, C.SCALE
+	from
+		TEMPDB.SYS.COLUMNS C
+		inner join SYS.TYPES T
+			on C.SYSTEM_TYPE_ID = T.SYSTEM_TYPE_ID
+	where [OBJECT_ID] = OBJECT_ID(N'tempdb..#${1:TEMP_TABLE_NAME}')
+
+snippet extubation
+	with RECIPIENT as
+	(
+	select distinct
+		PATIENT.PAT_ID
+	, PATIENT.PAT_NAME
+	, IDENTITY_ID.IDENTITY_ID as MRN
+	, TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+	, ZC_TX_CLASS.NAME as TXP_ORGAN
+	, dense_rank() over (partition by IDENTITY_ID.IDENTITY_ID order by TRANSPLANT_INFO.SUMMARY_BLOCK_ID) as EPISODE_SEQUENCE
+	, coalesce(PAT_ENC_HSP.HOSP_ADMSN_TIME, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE) as INDEX_ADMISSION_TIME
+	, cast(coalesce(PAT_ENC_HSP.HOSP_ADMSN_TIME, TRANSPLANT_INFO.TXP_CALC_ADMIT_DATE) as date) as INDEX_ADMISSION_DATE
+	, TRANSPLANT_INFO.TX_SURG_DT as TRANSPLANT_DATE
+	, ORGAN.ANASTOMOSIS_ST_DTTM as ANASTOMOSIS_TIME
+	, coalesce(PAT_ENC_HSP.HOSP_DISCH_TIME, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT) as INDEX_DISCHARGE_TIME
+	, cast(coalesce(PAT_ENC_HSP.HOSP_DISCH_TIME, TRANSPLANT_INFO.TXP_CALC_DISCHRG_DT) as date) as INDEX_DISCHARGE_DATE
+	, TRANSPLANT_INFO.TXP_ADMIT_CSN
+	from
+		PATIENT
+		inner join IDENTITY_ID
+			on PATIENT.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_INFO
+			on TRANSPLANT_INFO.PAT_ID = IDENTITY_ID.PAT_ID
+		inner join TRANSPLANT_CLASS
+			on TRANSPLANT_INFO.SUMMARY_BLOCK_ID = TRANSPLANT_CLASS.SUMMARY_BLOCK_ID
+		inner join ZC_TX_CLASS
+			on TRANSPLANT_CLASS.TX_CLASS_C = ZC_TX_CLASS.TX_CLASS_C
+		left join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = TRANSPLANT_INFO.TXP_ADMIT_CSN
+		left join TRANSPLANT_ORGANS
+			on TRANSPLANT_ORGANS.SUMMARY_BLOCK_ID = TRANSPLANT_INFO.SUMMARY_BLOCK_ID
+		left join ORGAN
+			on ORGAN.ORG_RECORD_ID = TRANSPLANT_ORGANS.TX_ORG_ID
+	where TRANSPLANT_INFO.EPISODE_STATUS_C <>  3 -- not deleted
+		and IDENTITY_ID.IDENTITY_TYPE_ID = 100     -- HUP
+		and TRANSPLANT_INFO.TX_EPSD_TYPE_C = 2     -- Recipient
+		and (TRANSPLANT_INFO.TX_IS_HISTORIC_YN <> 'Y' or TRANSPLANT_INFO.TX_IS_HISTORIC_YN is null)
+		and ZC_TX_CLASS.NAME = 'Kidney'
+	),
+	EXTUBATION_DATE as
+	(
+	select distinct
+		RECIPIENT.SUMMARY_BLOCK_ID
+	, IP_FLWSHT_MEAS.FSD_ID
+	, IP_FLWSHT_MEAS.FLT_ID
+	, IP_FLWSHT_MEAS.FLO_MEAS_ID
+	, IP_FLT_DATA.DISPLAY_NAME as TEMPLATE_NAME
+	, IP_FLO_GP_DATA.FLO_MEAS_NAME as FULL_NAME
+	, IP_FLO_GP_DATA.DISP_NAME as ROW_NAME
+	, IP_FLWSHT_MEAS.RECORDED_TIME as TIME_TAKEN
+	, IP_FLWSHT_MEAS.MEAS_VALUE as VALUE
+	, cast(dateadd(day, cast(IP_FLWSHT_MEAS.MEAS_VALUE as INT), '12/31/1840') as date) as D
+	, IP_FLO_GP_DATA.UNITS
+	, dense_rank() over (partition by RECIPIENT.SUMMARY_BLOCK_ID, IP_FLWSHT_MEAS.FLO_MEAS_ID order by IP_FLWSHT_MEAS.RECORDED_TIME asc) as SORT
+	from
+		RECIPIENT
+		inner join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = RECIPIENT.TXP_ADMIT_CSN
+		inner join IP_FLWSHT_REC
+			on IP_FLWSHT_REC.INPATIENT_DATA_ID = PAT_ENC_HSP.INPATIENT_DATA_ID
+		inner join IP_FLWSHT_MEAS
+			on IP_FLWSHT_MEAS.FSD_ID = IP_FLWSHT_REC.FSD_ID
+		inner join IP_FLT_DATA
+			on IP_FLT_DATA.TEMPLATE_ID = IP_FLWSHT_MEAS.FLT_ID
+		left join IP_FLO_GP_DATA
+			on IP_FLO_GP_DATA.FLO_MEAS_ID = IP_FLWSHT_MEAS.FLO_MEAS_ID
+	where IP_FLWSHT_MEAS.FLT_ID = '3040310001'
+		and IP_FLO_GP_DATA.FLO_MEAS_ID = '19943'
+		and IP_FLWSHT_MEAS.RECORDED_TIME >= coalesce(RECIPIENT.ANASTOMOSIS_TIME, RECIPIENT.TRANSPLANT_DATE)
+	),
+	EXTUBATION_TIME as
+	(
+	select distinct
+		RECIPIENT.SUMMARY_BLOCK_ID
+	, IP_FLWSHT_MEAS.FSD_ID
+	, IP_FLWSHT_MEAS.FLT_ID
+	, IP_FLWSHT_MEAS.FLO_MEAS_ID
+	, IP_FLT_DATA.DISPLAY_NAME as TEMPLATE_NAME
+	, IP_FLO_GP_DATA.FLO_MEAS_NAME as FULL_NAME
+	, IP_FLO_GP_DATA.DISP_NAME as ROW_NAME
+	, IP_FLWSHT_MEAS.RECORDED_TIME as TIME_TAKEN
+	, IP_FLWSHT_MEAS.MEAS_VALUE as VALUE
+	, IP_FLO_GP_DATA.UNITS
+	, concat(floor(cast(IP_FLWSHT_MEAS.MEAS_VALUE as INT)/3600), ':', floor(cast(IP_FLWSHT_MEAS.MEAS_VALUE as INT)/60)%60) as T
+	, dense_rank() over (partition by RECIPIENT.SUMMARY_BLOCK_ID, IP_FLWSHT_MEAS.FLO_MEAS_ID order by IP_FLWSHT_MEAS.RECORDED_TIME asc) as SORT
+	from
+		RECIPIENT
+		inner join PAT_ENC_HSP
+			on PAT_ENC_HSP.PAT_ENC_CSN_ID = RECIPIENT.TXP_ADMIT_CSN
+		inner join IP_FLWSHT_REC
+			on IP_FLWSHT_REC.INPATIENT_DATA_ID = PAT_ENC_HSP.INPATIENT_DATA_ID
+		inner join IP_FLWSHT_MEAS
+			on IP_FLWSHT_MEAS.FSD_ID = IP_FLWSHT_REC.FSD_ID
+		inner join IP_FLT_DATA
+			on IP_FLT_DATA.TEMPLATE_ID = IP_FLWSHT_MEAS.FLT_ID
+		left join IP_FLO_GP_DATA
+			on IP_FLO_GP_DATA.FLO_MEAS_ID = IP_FLWSHT_MEAS.FLO_MEAS_ID
+	where IP_FLWSHT_MEAS.FLT_ID = '3040310001'
+		and IP_FLO_GP_DATA.FLO_MEAS_ID = '3040367446'
+		and IP_FLWSHT_MEAS.RECORDED_TIME >= coalesce(RECIPIENT.ANASTOMOSIS_TIME, RECIPIENT.TRANSPLANT_DATE)
+	)
+	select distinct
+		RECIPIENT.SUMMARY_BLOCK_ID
+	, RECIPIENT.ANASTOMOSIS_TIME
+	, RECIPIENT.TRANSPLANT_DATE
+	, cast(coalesce(RECIPIENT.ANASTOMOSIS_TIME, RECIPIENT.TRANSPLANT_DATE) as datetime) as TRANSPLANT_TIME
+	, cast(concat(EXTUBATION_DATE.D, ' ', EXTUBATION_TIME.T) as datetime) as EXTUBATION_DTTM
+	, EXTUBATION_DATE.D as EXTUBATION_DATE
+	, EXTUBATION_TIME.T as EXTUBATION_TIME
+	from
+		RECIPIENT
+		inner join EXTUBATION_DATE
+			on EXTUBATION_DATE.SUMMARY_BLOCK_ID = RECIPIENT.SUMMARY_BLOCK_ID
+			and EXTUBATION_DATE.SORT = 1
+		left join EXTUBATION_TIME
+			on EXTUBATION_TIME.SUMMARY_BLOCK_ID = RECIPIENT.SUMMARY_BLOCK_ID
+			and EXTUBATION_TIME.TIME_TAKEN = EXTUBATION_DATE.TIME_TAKEN
+
+
+snippet concat_recursive
+	with X as
+	(
+	select
+		${1:__GroupIdentifier__}
+	, count(*) over (partition by $1) as N
+	, cast(${2:__Item__} as varchar(100)) as LIST
+	, ${3:__ItemIdentifier__}
+	, 1 as LEN
+	from
+		${4:__UnconcatenatedTable__}
+	union all
+	select
+		X.$1
+	, X.N
+	, cast(X.LIST + ', ' + E.$2 as varchar(100)) as LIST
+	, E.$3
+	, X.LEN+1 as LEN
+	from
+		$4 E
+		inner join X
+			on E.$1 = X.$1
+			and E.$3 > X.$3
+	)
+	select
+		$1
+	, LIST
+	from
+		X
+	where LEN = N
+	order by 1
+
+snippet concat_xmlpath
+	select
+		${1:__PrimaryKey__}
+	, left(SUBQUERY.CONCATENATED_FIELD, case when len(SUBQUERY.CONCATENATED_FIELD) > 0 then len(SUBQUERY.CONCATENATED_FIELD)-1 else 0 end) as ${2:__FinalTextTitle__}
+	from
+		(
+			select distinct
+				SOURCE_B.$1
+			, (
+					select
+						SOURCE_A.${3:__FieldToConcatenate__} + '' as [text()]
+					from
+						${4:__SourceTable__} SOURCE_A
+					where SOURCE_A.$1 = SOURCE_B.$1
+					order by
+						SOURCE_A.$1
+					, SOURCE_A.${5:__LineIndex__}
+					for XML path ('')
+				) as CONCATENATED_FIELD
+			from $4 SOURCE_B
+		) SUBQUERY
+
+snippet mailbox
+	Hi ${1:__RECIPIENT__},
+
+	The results have been uploaded to the DAC Mailbox: *${2:__FILE__}*
+
+	Please let me know if you have any questions or concerns.
+
+snippet enctype
+	select
+		PAT_ENC.PAT_ENC_CSN_ID
+	, PAT_ENC.CONTACT_DATE
+	, PAT_ENC.ENC_TYPE_C
+	, ZC_DISP_ENC_TYPE.NAME as ENC_TYPE
+	from
+		PAT_ENC
+		inner join ZC_DISP_ENC_TYPE
+			on ZC_DISP_ENC_TYPE.DISP_ENC_TYPE_C = PAT_ENC.ENC_TYPE_C
+
+snippet t100
+	with t100(x, N) as
+	(
+	select
+		0,
+		1
+	union all
+	select
+		n + 1,
+		n + 1
+	from
+		t100
+	where x < 100
+	)
+	select
+		N
+	from
+		t100
+	;
+
+snippet stats
+	SET STATISTICS IO, TIME ON;
+
+snippet dttm
+	, ${1:DTTM} as ${2:_FieldName_}_DTTM
+	, cast($1 as date) as $2_DATE
+	, cast($1 as time) as $2_TIME
+
+snippet hours
+	round(cast(datediff(minute, ${1:first_time}, ${2:second_time}) AS FLOAT)/60, 2) AS ${3:field_name}
+
+snippet lab_creatinine
+	SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+	SELECT DISTINCT
+		transplant_info.summary_block_id
+	, transplant_info.tx_surg_dt
+	, order_proc.order_proc_id
+	, clarity_eap.proc_code
+	, clarity_component.name
+	, clarity_component.external_name
+	, clarity_component.base_name
+	, clarity_component.common_name
+	, order_proc.order_time AS order_dttm
+	, CAST(order_proc.order_time AS DATE) AS order_date
+	, CAST(order_proc.order_time AS TIME) AS order_time
+	, COALESCE(order_proc_2.specimn_taken_time, order_proc_2.specimn_taken_date, order_proc.order_time) AS collection_dttm
+	, CAST(COALESCE(order_proc_2.specimn_taken_time, order_proc_2.specimn_taken_date, order_proc.order_time) AS DATE) AS collection_date
+	, CAST(COALESCE(order_proc_2.specimn_taken_time, order_proc_2.specimn_taken_date, order_proc.order_time) AS TIME) AS collection_time
+	, order_results.result_time AS result_dttm
+	, CAST(order_results.result_time AS DATE) AS result_date
+	, CAST(order_results.result_time AS TIME) AS result_time
+	, order_results.ord_value
+	, order_results.reference_unit
+	, order_results.ord_num_value
+	, DENSE_RANK() OVER (PARTITION BY transplant_info.summary_block_id ORDER BY order_proc_2.specimn_taken_time, order_proc_2.specimn_taken_date, order_proc.order_time) AS sort
+	FROM
+		transplant_info
+		INNER JOIN order_proc
+			ON order_proc.pat_id = transplant_info.pat_id
+		INNER JOIN clarity_eap
+			ON clarity_eap.proc_id = order_proc.proc_id
+		INNER JOIN order_results
+			ON order_results.order_proc_id = order_proc.order_proc_id
+		INNER JOIN clarity_component
+			ON clarity_component.component_id = order_results.component_id
+		LEFT JOIN order_proc_2
+			ON order_proc_2.order_proc_id = order_proc.order_proc_id
+	WHERE 1=1
+		AND clarity_component.component_id IN (39, 2303, 16884, 27397, 37721, 50149) -- Creatinine
+		AND clarity_eap.proc_id IN (10597, 10598, 10782, 10783, 10785, 11465, 11470, 11473, 11786, 11900, 12519, 12620, 12621, 12625, 12637, 12874, 16419, 16420, 16672, 16678, 28012, 34542, 55952, 56257, 57167, 57284, 62019, 62054, 62345, 62488, 63595, 66165, 66579, 75461, 76839, 86819, 91199, 95897, 117880, 119464, 124451, 134501, 136446, 147561, 147580, 147584, 147592, 147706, 152904, 154708, 157377)
+		AND transplant_info.episode_status_c <>  3 -- not deleted
+		AND transplant_info.tx_epsd_type_c = 2     -- Recipient
+		AND transplant_info.tx_current_stage_c = 50 -- Transplanted
+		AND transplant_info.tx_surg_dt >= '07/01/2015'
+	;

@@ -9,7 +9,6 @@ mkdir -p ~/.vim/bundle
 cd ~/.vim/bundle
 
 # Third, install your glorious plugins!
-git clone https://github.com/scrooloose/nerdtree
 git clone https://github.com/godlygeek/tabular
 git clone https://github.com/mattn/emmet-vim
 git clone https://github.com/tpope/vim-commentary

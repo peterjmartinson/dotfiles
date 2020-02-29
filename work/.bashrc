@@ -1,51 +1,46 @@
-echo "archive    -> /i/Athena/Report Requests/martinson/"
+echo "reports    -> /i/Athena/Report Requests/martinson/"
+echo "work       -> Launch Vim in /Work"
+echo "local      -> /c/Users/martinsp/Documents/Work"
 echo "transplant -> /i/Transplant - Datawarehouse Team/"
-echo "report     -> /c/Users/martinsp/REQUESTS/"
 echo "documents  -> /c/Users/martinsp/Documents/"
-echo "code       -> /c/Users/martinsp/Code/"
-echo "test       -> /c/Users/martinsp/Code/Work/Geocode Testing"
+echo "code       -> /c/Users/martinsp/Documents/code/"
+# echo "test       -> /c/Users/martinsp/Code/Work/Geocode Testing"
 echo "cheatsheet -> print a list of useful commands"
 echo "snip       -> edit the Vim snippet list"
 
-alias archive='cd /i/Athena/Report\ Requests/martinson/'
-alias report='cd ~/REQUESTS/'
-alias code='cd /c/Users/martinsp/Code'
+alias reports='cd /i/Athena/Report\ Requests/martinson/'
+alias local='cd /c/Users/martinsp/Documents/Work'
+alias code='cd /c/Users/martinsp/Documents/code'
 alias documents='cd /c/Users/martinsp/Documents'
 alias transplant='cd /i/Transplant\ -\ Datawarehouse\ Team/'
-alias test='cd /c/Users/martinsp/Code/Work/Geocode\ Testing'
+alias txp="transplant"
+# alias test='cd /c/Users/martinsp/Code/Work/Geocode\ Testing'
 alias sql='sqlplus REPORTS_ADMIN/Ad4ReportDb@"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=DACDatabasePDSProd)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=pdsprd.uphs.upenn.edu)))"'
-alias snip='vim .vim/after/snippets/_.snippets'
-alias work='cd ~/REQUESTS/ ; vim -c Explore'
+alias pdsuid='sqlplus REPORTS_ADMIN/Ad4ReportDb@"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=DACDatabasePDSUid)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=pdsuid.uphs.upenn.edu)))"'
+alias snip='vim ~/.vim/after/snippets/_.snippets'
+alias clone='/i/Athena/Report\ Requests/martinson/clone.sh'
+alias ssh-ds='ssh uphsvlndc121.uphs.upenn.edu'
+
+work() {
+  cd /c/Users/martinsp/Documents/Work
+  vim -c Explore
+}
 
 alias ll='ls -l'
 alias la='ls -a'
 alias lsort='ls -lt'
 
 alias tree="find . -print | sed -e '/^\.$/d' -e 's/[^-][^\/]*\//--/g' -e 's/^/   /' -e 's/-/|/'"
-alias comma="sed -i 's/ *, */,/g' *"
-alias white="sed -i 's/^ *//g' *"
 
-alias txp="transplant"
 alias cs="cheatsheet"
-alias python="winpty python.exe"
+alias python="winpty /c/Users/martinsp/AppData/Local/Continuum/anaconda3/python.exe"
+alias conda="winpty /c/Users/martinsp/AppData/Local/Continuum/anaconda3/Scripts/conda.exe"
 alias mocha="mocha --colors"
+alias javac='/c/Program\ Files/Java/jdk-9.0.1/bin/javac'
+
+PATH=$PATH:/c/Users/martinsp/AppData/Local/Continuum/anaconda3/Scripts
 
 alias snip="vim .vim/after/snippets/_.snippets"
-
-# removes whitespace around commas and at beginnings of lines
-# used for dirty .csv files created by SQL*Plus
-trimcsv () {
-  sed -i 's/ *, */,/g' *.csv;
-  sed -i 's/^ *//g' *.csv;
-}
-
-# removes whitespace around bars | and at beginnings of lines
-# used for dirty .csv files created by SQL*Plus
-trimbar () {
-  sed -i 's/ *| */|/g' *.csv;
-  sed -i 's/^ *//g' *.csv;
-  sed -i '$d' *.csv;
-}
 
 cheatsheet () {
   echo "=======";

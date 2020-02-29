@@ -24,15 +24,18 @@ set linebreak                       " Don't break words at the wrap
 set nolist                          " Don't show eol and other chars
 set ignorecase                      " Ignore case while searching
 set incsearch                       " Start highlighting as you type in search
-set nohlsearch                      " Do not highlight all occurrences of a search
 set scrolloff=5                     " Scroll when 5 lines from top or bottom
 set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
+set nohlsearch                      " Do not highlight all occurrences of a search
 set history=200                     " Keep history of 200 commands
+set clipboard=unnamed               " Send yanks to the Windows clipboard!
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
 colorscheme gruvbox
-set background=dark                 " Dark Solarize colorscheme
+set background=dark
+set backspace=indent,eol,start
+set guifont=Consolas:h9
 
 """"""""""""""
 " Statusline "
@@ -93,9 +96,16 @@ nnoremap <C-l> <C-w>l
 nnoremap \ <C-w>w
 nnoremap <C-\> :only<cr>
 
+"  Resize splits
+nnoremap <C-Up> <C-W>>
+nnoremap <C-Down> <C-W><
+
 "  Open the Quickfix window
 nnoremap <space>q :copen<cr>
 nnoremap <space>Q :cclose<cr>
+
+"  Make K do something more predictable
+nnoremap K k:echo "    -->  Caps Lock is ON !!  <--"<cr>
 
 """""""""""""""""""""""""
 " SQL specific bindings "
@@ -111,12 +121,14 @@ nnoremap <space>st yiWIdrop table <esc>A;<cr>create table <esc>pA nologging as<e
 nnoremap <space>s( vip:sort un<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
 
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <space>s' vip:sort un<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+nnoremap <space>s' vip:sort u<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
 
 "  get a date range from 'From: <date> 	To: <date>'
 nnoremap <space>sb I  and __date__ between '<esc>ldf Ea' and '<esc>ldf A'<esc>0f_
 
-
+"  Reformat a query for Power BI
+vnoremap q k:s/\n/#(lf)/g<cr>
+nnoremap <space>p vipk:s/\n/#(lf)/g<cr>"+dd:echo "  -->  Yanked block as a Power Query string  <--"<cr>
 
 
 
@@ -133,6 +145,12 @@ nnoremap M- yypVr-o<esc>
 " Title a journal entry with the date
 nnoremap Mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
 
+""""""""""""
+" Commands "
+""""""""""""
+
+" Switch to a new Git branch named 'dev'
+command! Dev Git checkout -b dev
 
 """""""""""""""""""
 " Linter Settings "
@@ -185,6 +203,8 @@ iabbrev   ADN       AND
 iabbrev   soem      some
 iabbrev   teh       the
 iabbrev   joni      join
-
-
+iabbrev   trans     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+iabbrev   TRANS     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+iabbrev   thsi      this
+iabbrev   Thsi      This
 
