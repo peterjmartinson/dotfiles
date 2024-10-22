@@ -1,4 +1,4 @@
-"  
+
 "  Author:      Peter Martinson
 "  Create Date: September 1, 2015
 "  
@@ -8,8 +8,7 @@
 set nocompatible
 
 "  Plugin manager
-execute pathogen#infect()
-execute pathogen#helptags()
+" execute pathogen#infect()
 filetype plugin on
 
 autocmd FileType sql setlocal commentstring=--\ %s
@@ -30,34 +29,29 @@ set showcmd                         " Show current command & selection length
 set t_Co=256                        " Use 256 colors
 set nohlsearch                      " Do not highlight all occurrences of a search
 set history=200                     " Keep history of 200 commands
+set clipboard=unnamedplus           " Send yanks to the Linux clipboard!
 syntax enable                       " Turn on syntax highlighting
 au FileType * set fo-=c fo-=r fo-=o " kill the auto commenting!!
-set makeprg=make\ %<
-
 colorscheme gruvbox
-set background=dark                 " Dark colorscheme
+" colorscheme default
+set background=dark
+set backspace=indent,eol,start
+set guifont=Consolas:h9
 
-if &term =~ '256color'  
-  " disable Background Color Erase (BCE) so that color schemes  
-  " render properly when inside 256-color tmux and GNU screen.  
-  " see also http://snk.tuxfamily.org/log/vim-256color-bce.html  
-  set t_ut=  
-endif
-
-set noerrorbells visualbell t_vb=
-if has('autocmd')
-  autocmd GUIEnter * set visualbell t_vb=
-endif
-
-
+let g:snipMate = { 'snippet_version' : 1 }
 
 """"""""""""""
 " Statusline "
 """"""""""""""
 
 set laststatus=2                    " Show statusline always
-set statusline=\ %t\ %{fugitive#statusline()}\%m\%=
-set statusline+=\ \%c\ \|\ %l\/%L\ 
+set statusline=
+set statusline+=\ %t\ 
+set statusline+=%#CursorLineNr#
+set statusline+=%{fugitive#statusline()}
+set statusline+=%*
+set statusline+=\ \%m\%=
+set statusline+=\ \%c\ \|\ %l\/%L\ (%p\%%)
 
 """""""""""""""
 " Keybindings "
@@ -69,18 +63,23 @@ nnoremap ! i#!/bin/sh<cr><esc>
 "  open a file manager
 nnoremap <space>e :Explore<cr>
 nnoremap <space>v :Vexplore!<cr>
-nnoremap <C-t> :Texplore<cr>
+nnoremap <space>t :Texplore<cr>
 
 "  Put in the current date
 nnoremap gp "=strftime('%B %d, %Y')<cr>p
+nnoremap gP "=strftime('%m/%d/%Y')<cr>p
+
 " 80 character rule above current line
-nnoremap <space>- O<esc>80i-<esc>j0
-"  Centers text into a comment line
+nnoremap <space>- O--------------------------------------------------------------------------------<esc>j0
+"  Center text into a comment line
 nnoremap <space>l :center 80<cr>hhv0llr_hvhs/*<esc>lvey$A <esc>pA*/<cr><esc>
 "  Delete current line but leave a blank line there
 nnoremap <space><space> 0d$
 "  Copy an entire paragraph
-nnoremap , yip
+nnoremap Y m`"*yip
+
+" Run Fugitive's Git Status
+nnoremap gs :Git<cr>
 
 "  move screen lines with arrow keys
 imap <up> <C-O>gk
@@ -96,46 +95,20 @@ nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
-"  Fugitive bindings
-nnoremap gs :Gstatus<cr>
-
-"  Cycle through splits with \ -> save left pinky!
+"  Cycle through splits and tabs with \ -> save left pinky!
 nnoremap \ <C-w>w
-nnoremap <C-\> :tabnext<cr>
-nnoremap <C-6> <C-^>
+nnoremap <C-\> :only<cr>
 
-"  toggle wrap
-nnoremap [w :set wrap<cr>
-nnoremap ]w :set nowrap<cr>
+"  Resize splits
+nnoremap <C-Up> <C-W>>
+nnoremap <C-Down> <C-W><
 
+"  Open the Quickfix window
+nnoremap <space>q :copen<cr>
+nnoremap <space>Q :cclose<cr>
 
-
-
-"""""""""""""
-" Compiling "
-"""""""""""""
-
-"  Write and compile
-nnoremap <space>c :w<cr>:make<cr>
-
-"  Toggle the Quickfix window open and close
-nnoremap <space>q :call QuickfixToggle()<cr>
-
-let g:quickfix_is_open = 0
-
-function! QuickfixToggle()
-    if g:quickfix_is_open
-        cclose
-        let g:quickfix_is_open = 0
-        execute g:quickfix_return_to_window . "wincmd w"
-    else
-        let g:quickfix_return_to_window = winnr()
-        copen
-        let g:quickfix_is_open = 1
-    endif
-endfunction
-
-
+"  Make K do something more predictable
+nnoremap K k:echo "    -->  Caps Lock is ON !!  <--"<cr>
 
 """""""""""""""""""""""""
 " SQL specific bindings "
@@ -143,26 +116,70 @@ endfunction
 
 "  01/01/2010 -> to_date('01/01/2010','MM/DD/YYYY')
 nnoremap <space>sd viW<esc>a','MM/DD/YYYY')<esc>Bito_date('<esc>%%
+
 "  TABLE_NAME -> drop table/create table TABLE_NAME
-nnoremap <space>st viw<esc>a nologging as<esc>bbbicreate table <esc>wyiwO<esc>pviw<esc>a;<esc>hbidrop table <esc>j0
+nnoremap <space>st yiWIdrop table <esc>A;<cr>create table <esc>pA nologging as<esc>0k
 
 "  format list of values to -> (a, b, c, etc.)
 nnoremap <space>s( vip:sort un<cr>vipk:s/\n/, /<cr>I(<esc>A)<esc>0
+
 "  format list of values to -> ('a', 'b', 'c', etc.)
-nnoremap <space>s' vip:sort un<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+nnoremap <space>s' vip:sort u<cr>vip:s/^/'/<cr>vipk:s/\n/', /<cr>I(<esc>A')<esc>0
+
+"  get a date range from 'From: <date> 	To: <date>'
+nnoremap <space>sb I  and __date__ between '<esc>ldf Ea' and '<esc>ldf A'<esc>0f_
+
+"  Reformat a query for Power BI
+vnoremap q k:s/\n/#(lf)/g<cr>
+nnoremap <space>p vipk:s/\n/#(lf)/g<cr>"+dd:echo "  -->  Yanked block as a Power Query string  <--"<cr>
+
+"  Open a SQL scratch pad
+nnoremap <silent> <space>sh :aboveleft vnew<cr>:set syntax=sql<cr>
+nnoremap <silent> <space>sj :belowright new<cr>:set syntax=sql<cr>
+nnoremap <silent> <space>sk :aboveleft new<cr>:set syntax=sql<cr>
+nnoremap <silent> <space>sl :belowright vnew<cr>:set syntax=sql<cr>
+
+"  Remove all the [brackets] from a query.  Useful for SQL Server Management Studio
+nnoremap <space>s[ vip:s/\[//g<cr>vip:s/\]//g<cr>{
+
 
 """"""""""""""""""""""""""""""
 " Markdown Specific Bindings "
 """"""""""""""""""""""""""""""
 
 " underline with =
-nnoremap <space>m= yypVr=o<esc>
+nnoremap M= yypVr=o<esc>
 
 " underline with -
-nnoremap <space>m- yypVr-o<esc>
+nnoremap M- yypVr-o<esc>
 
 " Title a journal entry with the date
-nnoremap <space>mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
+nnoremap Mt ggi# <esc>:put =strftime(\"%A\")<cr>ggJo<cr># <esc>:put =strftime(\"%B\ %d\,\ %Y\")<cr>kJkddyypVr-o<esc>
+
+""""""""""""
+" Commands "
+""""""""""""
+
+" Switch to a new Git branch named 'dev'
+" command! Dev Git checkout -b dev
+
+"""""""""""""""""""
+" Linter Settings "
+"""""""""""""""""""
+
+"  Run JSLint, or whatever linter you gots
+" nmap <space>j :w<cr>:make<cr><cr>:copen<cr>
+
+"  ALE
+
+let g:ale_virtualtext_cursor = 'disabled'
+let g:ale_linters = { 'javascript': ['eslint'] }
+let g:ale_lint_on_save = 1
+let g:ale_sign_error = '>>'
+let g:ale_sign_warning = '--'
+let g:ale_echo_msg_error_str = 'E'
+let g:ale_echo_msg_warning_str = 'W'
+let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
 
 
 """""""""""""""""""""""""""""""""""
@@ -192,7 +209,19 @@ iabbrev   ADN       AND
 iabbrev   soem      some
 iabbrev   teh       the
 iabbrev   joni      join
+iabbrev   trans     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+iabbrev   TRANS     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+iabbrev   thsi      this
+iabbrev   Thsi      This
+iabbrev   becasue   because
+iabbrev   Becasue   Because
 
+"""""""""""""""""""""""""""""""
+"  Get a writing environment  "
+"""""""""""""""""""""""""""""""
 
+" nnoremap <space>w :set nonumber<cr>:set wrap<cr>:setlocal spell spelllang=en_us<cr>:colorscheme gruvbox<cr>:set background=light<cr>:highlight Normal ctermbg=white ctermfg=black<cr>:set syntax=markdown<cr>:echo "  ]s next word\n  [s previous word\n  zG ignore the word\n  zg add word to dictionary"<cr>
 
+nnoremap <space>w :set wrap<cr>:setlocal spell spelllang=en_us<cr>:colorscheme PaperColor<cr>:set background=light<cr>:set syntax=markdown<cr>:nnoremap j gj<cr>:nnoremap k gk<cr>:echo "  ]s next word\n  [s previous word\n  zG ignore the word\n  zg add word to dictionary"<cr>
 
+nnoremap <space>W :set number<cr>:set nowrap<cr>:set nospell<cr>:colorscheme gruvbox<cr>:set background=dark<cr>:filetype detect<cr>:nnoremap j j<cr>:nnoremap k k<cr>
