@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # First, install Pathogen
-mkdir -p ~/.vim/autoload ~/.vim/bundle && \
-curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
+# mkdir -p ~/.vim/autoload ~/.vim/bundle && \
+# curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
 
 # Second, make the bundle directory, and go there
 mkdir -p ~/.vim/bundle
