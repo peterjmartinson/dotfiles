@@ -8,7 +8,7 @@
 set nocompatible
 
 "  Plugin manager
-execute pathogen#infect()
+" execute pathogen#infect()
 filetype plugin on
 
 autocmd FileType sql setlocal commentstring=--\ %s
@@ -147,6 +147,8 @@ nnoremap <space>s[ vip:s/\[//g<cr>vip:s/\]//g<cr>{
 " Markdown Specific Bindings "
 """"""""""""""""""""""""""""""
 
+let g:markdown_fenced_languages = ['sql', 'python', 'bash=sh', 'javascript', 'html']
+
 " underline with =
 nnoremap M= yypVr=o<esc>
 
@@ -179,7 +181,7 @@ command! Dev Git checkout -b dev
 " let g:syntastic_auto_loc_list = 1
 " let g:syntastic_check_on_open = 1
 " let g:syntastic_check_on_wq = 0
-let g:syntastic_mode_map = { 'mode':'passive', 'active_filetypes':[], 'passive_filetypes':[] }
+" let g:syntastic_mode_map = { 'mode':'passive', 'active_filetypes':[], 'passive_filetypes':[] }
 
 " run Syntastic
 " nnoremap gs :SyntasticCheck<cr>
