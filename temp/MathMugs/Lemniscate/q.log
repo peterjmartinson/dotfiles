@@ -1,0 +1,13 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdftex 2024.11.25)  22 DEC 2024 17:28
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**q
+(/usr/share/texlive/texmf-dist/tex/latex/tools/q.tex File ignored
+)
+! Emergency stop.
+<*> q
+     
+*** (job aborted, no legal \end found)
+
+!  ==> Fatal error occurred, no output PDF file produced!

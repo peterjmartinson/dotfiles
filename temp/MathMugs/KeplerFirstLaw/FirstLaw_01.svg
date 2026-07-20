@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (1:1.4+202410161351+e7c3feb100)"
+   sodipodi:docname="FirstLaw_01.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showguides="true"
+     inkscape:zoom="1.0381216"
+     inkscape:cx="313.54707"
+     inkscape:cy="578.93023"
+     inkscape:window-width="1920"
+     inkscape:window-height="1026"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer4">
+    <sodipodi:guide
+       position="105,209.41383"
+       orientation="1,0"
+       id="guide2"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="210,147.95934"
+       orientation="0,-1"
+       id="guide3"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Ellipse"
+     inkscape:groupmode="layer"
+     id="layer1"
+     sodipodi:insensitive="true">
+    <ellipse
+       style="fill:#ff0000;fill-rule:evenodd;stroke-width:0.348053"
+       id="path2"
+       ry="85.423538"
+       rx="105"
+       cy="149.04066"
+       cx="105" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="lines"
+     sodipodi:insensitive="true">
+    <path
+       style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.965;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       d="M 105,149.04066 H 210"
+       id="path3" />
+    <path
+       style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.965;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+       d="m 104.98609,63.644395 61.62823,85.011525"
+       id="path3-2"
+       inkscape:transform-center-x="-30.833882"
+       inkscape:transform-center-y="42.533031" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="focus">
+    <circle
+       style="fill:#000000;fill-rule:evenodd;stroke-width:0.265;stroke-dasharray:none"
+       id="path4"
+       cx="166.66479"
+       cy="149.04066"
+       r="2.8834951" />
+  </g>
+</svg>
